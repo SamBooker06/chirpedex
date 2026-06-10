@@ -2,14 +2,4 @@ services:
   chirpedex:
     build:
       context: .
-      dockerfile: id.Dockerfile
-    volumes:
-      - .:/app
-      - chirpedex-cache:/home/nonroot/.cache
-      - chirpedex-venv:/app/.venv
-    working_dir: /app
-
-volumes:
-  chirpedex-cache:
-  chirpedex-venv:
-
+      dockerfile: images/id.Dockerfile
