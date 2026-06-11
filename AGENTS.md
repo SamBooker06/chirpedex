@@ -82,7 +82,7 @@ docker-compose.yml
 The Docker setup should support commands like:
 
 ```bash
-docker compose run --rm chirpedex identify examples/robin.wav
+docker compose run --rm chirpedex identify examples/test.wav
 docker compose run --rm chirpedex pytest
 docker compose run --rm chirpedex python -m chirpedex --help
 ```
@@ -164,13 +164,13 @@ Avoid:
 Target local command:
 
 ```bash
-python -m chirpedex identify examples/robin.wav
+python -m chirpedex identify examples/test.wav
 ```
 
 Target Docker command:
 
 ```bash
-docker compose run --rm chirpedex identify examples/robin.wav
+docker compose run --rm chirpedex identify examples/test.wav
 ```
 
 Example output:
@@ -184,7 +184,7 @@ Confidence: 0.92
 JSON output can be added later, for example:
 
 ```bash
-python -m chirpedex identify examples/robin.wav --json
+python -m chirpedex identify examples/test.wav --json
 ```
 
 ---
