@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Chirpedex.iml" filepath="$PROJECT_DIR$/.idea/Chirpedex.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/chirpedex.iml" filepath="$PROJECT_DIR$/.idea/chirpedex.iml" />
     </modules>
   </component>
 </project>
