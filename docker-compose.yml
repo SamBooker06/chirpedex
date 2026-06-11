@@ -3,3 +3,12 @@ services:
     build:
       context: .
       dockerfile: images/id.Dockerfile
+    profiles:
+      - prod
+  chirpedex-test:
+    build:
+      context: .
+      dockerfile: images/id.Dockerfile
+      target: test
+    profiles:
+      - testing
