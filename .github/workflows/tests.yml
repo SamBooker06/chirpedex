@@ -1,4 +1,4 @@
-name: Tests              # This whole file is a WORKFLOW
+name: Run Tests
 
 on:
   push:
@@ -16,4 +16,4 @@ jobs:
         run: docker compose build
 
       - name: Run tests in Docker
-        run: docker compose run --rm --entrypoint pytest chirpedex -v
+        run: docker compose run --rm chirpedex-test
