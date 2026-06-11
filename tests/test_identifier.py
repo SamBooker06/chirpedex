@@ -1,7 +1,9 @@
 """Tests for identifier module."""
 
-from pathlib import Path
 import builtins
+import os
+import sys
+from pathlib import Path
 from types import ModuleType
 from unittest.mock import MagicMock, patch
 
@@ -19,11 +21,11 @@ def create_identifier():
     analyzer_module.Analyzer = MagicMock()
 
     with patch.dict(
-        "sys.modules",
-        {
-            "birdnetlib": birdnetlib,
-            "birdnetlib.analyzer": analyzer_module,
-        },
+            "sys.modules",
+            {
+                "birdnetlib": birdnetlib,
+                "birdnetlib.analyzer": analyzer_module,
+            },
     ):
         from chirpedex.identifiers.birdnet_identifier import BirdNETIdentifier
 
@@ -89,3 +91,51 @@ class TestBirdNETIdentifier:
 
         with pytest.raises(IdentificationError, match="Test error"):
             identifier.identify_from_file(Path("examples/audio/test.wav"))
+
+    def test_suppresses_python_and_native_output(self, capfd) -> None:
+        """Test BirdNET output does not leak to stdout or stderr."""
+        def noisy_analyzer():
+            print("analyzer stdout")
+            print("analyzer stderr", file=sys.stderr)
+            os.write(1, b"native analyzer stdout\n")
+            os.write(2, b"native analyzer stderr\n")
+            return MagicMock()
+
+        birdnetlib = ModuleType("birdnetlib")
+        analyzer_module = ModuleType("birdnetlib.analyzer")
+        birdnetlib.Recording = MagicMock()
+        analyzer_module.Analyzer = noisy_analyzer
+
+        with patch.dict(
+            "sys.modules",
+            {
+                "birdnetlib": birdnetlib,
+                "birdnetlib.analyzer": analyzer_module,
+            },
+        ):
+            from chirpedex.identifiers.birdnet_identifier import BirdNETIdentifier
+
+            identifier = BirdNETIdentifier()
+
+        mock_recording = MagicMock()
+        mock_recording.detection_list = [
+            MagicMock(
+                confidence=0.95,
+                common_name="European Robin",
+                scientific_name="Erithacus rubecula",
+            )
+        ]
+
+        def noisy_analyze() -> None:
+            print("analysis stdout")
+            print("analysis stderr", file=sys.stderr)
+            os.write(1, b"native analysis stdout\n")
+            os.write(2, b"native analysis stderr\n")
+
+        mock_recording.analyze.side_effect = noisy_analyze
+        identifier._recording_class = MagicMock(return_value=mock_recording)
+        identifier.identify_from_file(Path("examples/audio/test.wav"))
+
+        captured = capfd.readouterr()
+        assert captured.out == ""
+        assert captured.err == ""
