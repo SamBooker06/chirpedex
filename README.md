@@ -2,19 +2,6 @@
 
 A portable bird identification system ("Pokédex for birds") that can listen to birdsong, identify species, and save sightings to a personal collection.
 
-## Current Status
-
-**Milestone 1: Dockerised bird audio identification CLI**
-
-Build a Python CLI tool that:
-- Accepts a local audio file
-- Validates the file
-- Runs bird identification using BirdNET
-- Returns a structured prediction
-- Handles errors cleanly
-- Includes tests
-- Runs cleanly inside Docker
-
 ## Quick Start
 
 ### Local Installation
@@ -75,11 +62,13 @@ chirpedex/
 ├── pyproject.toml
 ├── src/
 │   └── chirpedex/
+│       └── identification/
+│           ├── identifier.py            # Bird identification interface
+│           └── birdnet_identifier.py    # Identification using birdnet
 │       ├── __init__.py
 │       ├── __main__.py        # Entry point for python -m chirpedex
 │       ├── cli.py             # CLI interface
 │       ├── audio.py           # Audio file validation
-│       ├── identifier.py      # Bird identification interface
 │       ├── models.py          # Data models
 │       └── errors.py          # Custom exceptions
 └── tests/
@@ -217,5 +206,5 @@ See LICENSE file.
 
 - [BirdNET](https://birdnet.cornell.edu/)
 - [Cornell Lab of Ornithology](https://www.birds.cornell.edu/)
-- [birdnetlib Python package](https://github.com/jmears63/birdnetlib)
+- [birdnetlib Python package](https://pypi.org/project/birdnetlib/)
 
