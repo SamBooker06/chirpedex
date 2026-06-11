@@ -4,8 +4,16 @@ import argparse
 import sys
 
 from chirpedex.audio import validate_audio_file
-from chirpedex.errors import ChirpedexError, ModelError
-from chirpedex.identifier import BirdNETIdentifier
+from chirpedex.errors import ChirpedexError, FileNotFoundError_, ModelError
+from chirpedex.exit_codes import (
+    CHIRPEDEX_ERROR_EXIT_CODE,
+    FILE_NOT_FOUND_ERROR_EXIT_CODE,
+    GENERIC_ERROR_EXIT_CODE,
+    IMPORT_ERROR_EXIT_CODE,
+    MODEL_ERROR_EXIT_CODE,
+    SUCCESS_EXIT_CODE,
+)
+from chirpedex.identifiers.birdnet_identifier import BirdNETIdentifier
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -52,8 +60,7 @@ def main() -> int:
 
 
 def handle_identify(audio_path: str, json_output: bool = False) -> int:
-    """
-    Handle the identify command.
+    """Handle the identify command.
 
     Args:
         audio_path: Path to the audio file.
@@ -62,15 +69,16 @@ def handle_identify(audio_path: str, json_output: bool = False) -> int:
     Returns:
         Exit code (0 for success, non-zero for error).
     """
+
     try:
         # Validate the audio file
         validated_path = validate_audio_file(audio_path)
 
-        # Initialize the identifier
+        # Initialise the identifier
         identifier = BirdNETIdentifier()
 
         # Run identification
-        prediction = identifier.identify(validated_path)
+        prediction = identifier.identify_from_file(validated_path)
 
         # Output result
         if json_output:
@@ -87,23 +95,32 @@ def handle_identify(audio_path: str, json_output: bool = False) -> int:
         else:
             print(prediction)
 
-        return 0
+        return SUCCESS_EXIT_CODE
 
-    except ChirpedexError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
     except ModelError as e:
         print(f"Model Error: {e}", file=sys.stderr)
         print(
             "Note: First run may download the BirdNET model (~1 GB).",
             file=sys.stderr,
         )
-        return 2
+        return MODEL_ERROR_EXIT_CODE
+
+    except FileNotFoundError_ as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return FILE_NOT_FOUND_ERROR_EXIT_CODE
+
+    except ChirpedexError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return CHIRPEDEX_ERROR_EXIT_CODE
+    except ImportError as e:
+        print(f"ImportError: {e}", file=sys.stderr)
+
+        return IMPORT_ERROR_EXIT_CODE
+
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
-        return 3
+        return GENERIC_ERROR_EXIT_CODE
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

@@ -1,7 +1,8 @@
 """Entry point for python -m chirpedex"""
+import sys
 
 from chirpedex.cli import main
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
 
