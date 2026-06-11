@@ -4,10 +4,16 @@ import argparse
 import sys
 
 from chirpedex.audio import validate_audio_file
-from chirpedex.errors import ChirpedexError, ModelError
-from chirpedex.exit_codes import MODEL_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE, CHIRPEDEX_ERROR_EXIT_CODE, \
-    GENERIC_ERROR_EXIT_CODE, IMPORT_ERROR_EXIT_CODE
-from chirpedex.identifier import BirdNETIdentifier
+from chirpedex.errors import ChirpedexError, FileNotFoundError_, ModelError
+from chirpedex.exit_codes import (
+    CHIRPEDEX_ERROR_EXIT_CODE,
+    FILE_NOT_FOUND_ERROR_EXIT_CODE,
+    GENERIC_ERROR_EXIT_CODE,
+    IMPORT_ERROR_EXIT_CODE,
+    MODEL_ERROR_EXIT_CODE,
+    SUCCESS_EXIT_CODE,
+)
+from chirpedex.identifiers.birdnet_identifier import BirdNETIdentifier
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -54,6 +60,16 @@ def main() -> int:
 
 
 def handle_identify(audio_path: str, json_output: bool = False) -> int:
+    """Handle the identify command.
+
+    Args:
+        audio_path: Path to the audio file.
+        json_output: Whether to output as JSON.
+
+    Returns:
+        Exit code (0 for success, non-zero for error).
+    """
+
     try:
         # Validate the audio file
         validated_path = validate_audio_file(audio_path)
@@ -89,6 +105,10 @@ def handle_identify(audio_path: str, json_output: bool = False) -> int:
         )
         return MODEL_ERROR_EXIT_CODE
 
+    except FileNotFoundError_ as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return FILE_NOT_FOUND_ERROR_EXIT_CODE
+
     except ChirpedexError as e:
         print(f"Error: {e}", file=sys.stderr)
         return CHIRPEDEX_ERROR_EXIT_CODE
@@ -100,16 +120,6 @@ def handle_identify(audio_path: str, json_output: bool = False) -> int:
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
         return GENERIC_ERROR_EXIT_CODE
-    """
-    Handle the identify command.
-
-    Args:
-        audio_path: Path to the audio file.
-        json_output: Whether to output as JSON.
-
-    Returns:
-        Exit code (0 for success, non-zero for error).
-    """
 
 
 if __name__ == "__main__":
