@@ -2,7 +2,6 @@
 
 import argparse
 import sys
-from pathlib import Path
 
 from chirpedex.audio import validate_audio_file
 from chirpedex.errors import ChirpedexError, ModelError
