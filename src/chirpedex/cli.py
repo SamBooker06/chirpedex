@@ -66,7 +66,7 @@ def handle_identify(audio_path: str, json_output: bool = False) -> int:
         # Validate the audio file
         validated_path = validate_audio_file(audio_path)
 
-        # Initialize the identifier
+        # Initialise the identifier
         identifier = BirdNETIdentifier()
 
         # Run identification
