@@ -1,12 +1,12 @@
 """Tests for the CLI module."""
 
-import json
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from chirpedex.cli import create_parser, handle_identify, main
-from chirpedex.errors import InvalidAudioFormatError
+from chirpedex.exit_codes import (
+    CHIRPEDEX_ERROR_EXIT_CODE,
+    FILE_NOT_FOUND_ERROR_EXIT_CODE,
+)
 from chirpedex.models import BirdPrediction
 
 
@@ -40,13 +40,20 @@ def test_create_parser_no_args() -> None:
 def test_handle_identify_file_not_found() -> None:
     """Test handle_identify with non-existent file."""
     exit_code = handle_identify("nonexistent.wav")
-    assert exit_code == 1
+    assert exit_code == FILE_NOT_FOUND_ERROR_EXIT_CODE
 
 
 def test_handle_identify_invalid_format() -> None:
     """Test handle_identify with unsupported file format."""
-    exit_code = handle_identify("test.txt")
-    assert exit_code == 1
+    with patch("chirpedex.cli.validate_audio_file") as mock_validate:
+        from chirpedex.errors import InvalidAudioFormatError
+
+        mock_validate.side_effect = InvalidAudioFormatError(
+            "Unsupported audio format: .txt"
+        )
+        exit_code = handle_identify("test.txt")
+
+    assert exit_code == CHIRPEDEX_ERROR_EXIT_CODE
 
 
 @patch("chirpedex.cli.BirdNETIdentifier")
@@ -67,7 +74,7 @@ def test_handle_identify_success(mock_validate, mock_identifier_class) -> None:
         source_audio_path=test_path,
     )
     mock_identifier = MagicMock()
-    mock_identifier.identify.return_value = mock_prediction
+    mock_identifier.identify_from_file.return_value = mock_prediction
     mock_identifier_class.return_value = mock_identifier
 
     # Create a temporary test file
@@ -99,7 +106,7 @@ def test_handle_identify_json_output(mock_validate, mock_identifier_class) -> No
         source_audio_path=test_path,
     )
     mock_identifier = MagicMock()
-    mock_identifier.identify.return_value = mock_prediction
+    mock_identifier.identify_from_file.return_value = mock_prediction
     mock_identifier_class.return_value = mock_identifier
 
     # Create a temporary test file
@@ -130,7 +137,7 @@ def test_main_identify(capsys) -> None:
 
     with patch("chirpedex.cli.BirdNETIdentifier") as mock_id:
         mock_instance = MagicMock()
-        mock_instance.identify.return_value = mock_prediction
+        mock_instance.identify_from_file.return_value = mock_prediction
         mock_id.return_value = mock_instance
 
         with patch("chirpedex.cli.validate_audio_file") as mock_validate:
@@ -141,4 +148,3 @@ def test_main_identify(capsys) -> None:
             ):
                 exit_code = main()
                 assert exit_code == 0
-

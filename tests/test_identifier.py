@@ -1,6 +1,8 @@
 """Tests for identifier module."""
 
 from pathlib import Path
+import builtins
+from types import ModuleType
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,94 +11,81 @@ from chirpedex.errors import IdentificationError, ModelError
 from chirpedex.models import BirdPrediction
 
 
+def create_identifier():
+    """Create an identifier without importing the real BirdNET dependency."""
+    birdnetlib = ModuleType("birdnetlib")
+    birdnetlib.Recording = MagicMock()
+    analyzer_module = ModuleType("birdnetlib.analyzer")
+    analyzer_module.Analyzer = MagicMock()
+
+    with patch.dict(
+        "sys.modules",
+        {
+            "birdnetlib": birdnetlib,
+            "birdnetlib.analyzer": analyzer_module,
+        },
+    ):
+        from chirpedex.identifiers.birdnet_identifier import BirdNETIdentifier
+
+        return BirdNETIdentifier()
+
+
 class TestBirdNETIdentifier:
     """Test the BirdNETIdentifier class."""
 
     def test_identifier_init_no_birdnetlib(self) -> None:
         """Test that ModelError is raised if birdnetlib is not available."""
-        with patch("chirpedex.identifier.birdnetlib", side_effect=ImportError):
+        real_import = builtins.__import__
+
+        def import_without_birdnetlib(name, *args, **kwargs):
+            if name == "birdnetlib" or name.startswith("birdnetlib."):
+                raise ImportError("No module named 'birdnetlib'")
+            return real_import(name, *args, **kwargs)
+
+        with patch("builtins.__import__", side_effect=import_without_birdnetlib):
             with pytest.raises(ModelError):
-                from chirpedex.identifier import BirdNETIdentifier
+                from chirpedex.identifiers.birdnet_identifier import BirdNETIdentifier
 
                 BirdNETIdentifier()
 
-    @patch("chirpedex.identifier.Analyzer")
-    @patch("chirpedex.identifier.Recording")
-    def test_identify_success(self, mock_recording_class, mock_analyzer_class) -> None:
+    def test_identify_success(self) -> None:
         """Test successful identification."""
-        # Setup mocks
         mock_recording = MagicMock()
-        mock_recording_class.return_value = mock_recording
-
-        mock_analyzer = MagicMock()
-        mock_analyzer_class.return_value = mock_analyzer
-        mock_analyzer.get_results.return_value = [
-            {
-                "confidence": 0.95,
-                "common_name": "European Robin",
-                "scientific_name": "Erithacus rubecula",
-            }
+        mock_recording.detection_list = [
+            MagicMock(
+                confidence=0.95,
+                common_name="European Robin",
+                scientific_name="Erithacus rubecula",
+            )
         ]
 
-        # Mock the import
-        with patch.dict(
-            "sys.modules",
-            {"birdnetlib": MagicMock(), "birdnetlib.analyzer": MagicMock()},
-        ):
-            from chirpedex.identifier import BirdNETIdentifier
+        identifier = create_identifier()
+        identifier._recording_class = MagicMock(return_value=mock_recording)
+        identifier._analyzer_class = MagicMock()
+        result = identifier.identify_from_file(Path("examples/audio/test.wav"))
 
-            identifier = BirdNETIdentifier()
-            result = identifier.identify(Path("test.wav"))
+        assert isinstance(result, BirdPrediction)
+        assert result.species_common_name == "European Robin"
+        assert result.species_scientific_name == "Erithacus rubecula"
+        assert result.confidence == 0.95
 
-            assert isinstance(result, BirdPrediction)
-            assert result.species_common_name == "European Robin"
-            assert result.species_scientific_name == "Erithacus rubecula"
-            assert result.confidence == 0.95
-
-    @patch("chirpedex.identifier.Analyzer")
-    @patch("chirpedex.identifier.Recording")
-    def test_identify_no_results(
-        self, mock_recording_class, mock_analyzer_class
-    ) -> None:
+    def test_identify_no_results(self) -> None:
         """Test identification with no results."""
-        # Setup mocks
         mock_recording = MagicMock()
-        mock_recording_class.return_value = mock_recording
+        mock_recording.detection_list = []
 
-        mock_analyzer = MagicMock()
-        mock_analyzer_class.return_value = mock_analyzer
-        mock_analyzer.get_results.return_value = []
+        identifier = create_identifier()
+        identifier._recording_class = MagicMock(return_value=mock_recording)
+        identifier._analyzer_class = MagicMock()
 
-        # Mock the import
-        with patch.dict(
-            "sys.modules",
-            {"birdnetlib": MagicMock(), "birdnetlib.analyzer": MagicMock()},
-        ):
-            from chirpedex.identifier import BirdNETIdentifier
+        with pytest.raises(IdentificationError, match="No bird species detected"):
+            identifier.identify_from_file(Path("examples/audio/test.wav"))
 
-            identifier = BirdNETIdentifier()
-
-            with pytest.raises(IdentificationError):
-                identifier.identify(Path("test.wav"))
-
-    @patch("chirpedex.identifier.Analyzer")
-    @patch("chirpedex.identifier.Recording")
-    def test_identify_exception_handling(
-        self, mock_recording_class, mock_analyzer_class
-    ) -> None:
+    def test_identify_exception_handling(self) -> None:
         """Test that exceptions are caught and wrapped."""
-        # Setup mocks to raise an exception
-        mock_recording_class.side_effect = RuntimeError("Test error")
+        identifier = create_identifier()
+        identifier._recording_class = MagicMock(side_effect=RuntimeError("Test error"))
+        identifier._analyzer_class = MagicMock()
 
-        # Mock the import
-        with patch.dict(
-            "sys.modules",
-            {"birdnetlib": MagicMock(), "birdnetlib.analyzer": MagicMock()},
-        ):
-            from chirpedex.identifier import BirdNETIdentifier
-
-            identifier = BirdNETIdentifier()
-
-            with pytest.raises(IdentificationError):
-                identifier.identify(Path("test.wav"))
-
+        with pytest.raises(IdentificationError, match="Test error"):
+            identifier.identify_from_file(Path("examples/audio/test.wav"))
