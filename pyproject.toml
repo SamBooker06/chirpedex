@@ -1,18 +1,20 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
 
 [project]
 name = "chirpedex"
-version = "0.1.1"
 description = "A portable bird identification Pokédex"
 requires-python = ">=3.12"
+dynamic = ["version"]
 dependencies = [
     "birdnetlib>=0.4.1",
+    "fastapi>=0.136.3",
     "librosa>=0.10.0",
     "numpy>=1.24.0",
     "resampy>=0.4.3",
     "tensorflow>=2.21.0",
+    "uvicorn>=0.49.0",
 ]
 
 [project.optional-dependencies]
@@ -26,6 +28,12 @@ chirpedex = "chirpedex.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/chirpedex"]
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning]
+fallback-version = "0.0.0"
 
 [dependency-groups]
 dev = [
