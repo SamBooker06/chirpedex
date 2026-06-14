@@ -3,6 +3,7 @@ import signal
 import fastapi
 
 import chirpedex
+from chirpedex.api import DEFAULT_HOST, DEFAULT_API_PORT
 
 _app = fastapi.FastAPI()
 
@@ -21,10 +22,10 @@ def shutdown() -> str:
     return "Shutting down..."
 
 
-def start_server() -> None:
+def start_server(host: str = DEFAULT_HOST, port: int = DEFAULT_API_PORT) -> None:
     from uvicorn import run
 
-    run(_app, host="0.0.0.0", port=8000)
+    run(_app, host=host, port=port)
 
 
 if __name__ == "__main__":
