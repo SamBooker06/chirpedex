@@ -9,7 +9,7 @@ requires-python = ">=3.12"
 dynamic = ["version"]
 dependencies = [
     "birdnetlib>=0.4.1",
-    "fastapi>=0.136.3",
+    "fastapi>=0.137.0",
     "librosa>=0.10.0",
     "numpy>=1.24.0",
     "pytest>=9.0.3",
@@ -20,8 +20,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
+    "pytest>=9.0.3",
     "pytest-cov>=4.0",
+    "fastapi[standard]>=0.137.0"
 ]
 
 [project.scripts]
@@ -41,6 +42,6 @@ fallback-version = "0.0.0"
 
 [dependency-groups]
 dev = [
-    "fastapi[standard]>=0.136.3",
+    "fastapi[standard]>=0.137.0",
     "pytest>=9.0.3",
 ]
