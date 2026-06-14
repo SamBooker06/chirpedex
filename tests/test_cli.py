@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from chirpedex.cli import (
+from chirpedex.cli.cli import (
     create_parser,
     handle_identify,
     handle_multi_identify,
@@ -56,7 +56,7 @@ def test_handle_identify_file_not_found() -> None:
 
 def test_handle_identify_invalid_format() -> None:
     """Test handle_identify with unsupported file format."""
-    with patch("chirpedex.cli.cli.validate_audio_file") as mock_validate:
+    with patch("chirpedex.cli.identify.validate_audio_file") as mock_validate:
         from chirpedex.errors import InvalidAudioFormatError
 
         mock_validate.side_effect = InvalidAudioFormatError(
@@ -68,8 +68,8 @@ def test_handle_identify_invalid_format() -> None:
     assert result.output == "Error: Unsupported audio format: .txt"
 
 
-@patch("chirpedex.cli.cli.BirdNETIdentifier")
-@patch("chirpedex.cli.cli.validate_audio_file")
+@patch("chirpedex.cli.identify.BirdNETIdentifier")
+@patch("chirpedex.cli.identify.validate_audio_file")
 def test_handle_identify_success(mock_validate, mock_identifier_class) -> None:
     """Test successful bird identification."""
     test_path = Path("test.wav")
@@ -91,8 +91,9 @@ def test_handle_identify_success(mock_validate, mock_identifier_class) -> None:
     assert "Species: European Robin" in result.output
     mock_identifier.identify_from_file.assert_called_once_with(test_path)
 
-@patch("chirpedex.cli.cli.BirdNETIdentifier")
-@patch("chirpedex.cli.cli.validate_audio_file")
+
+@patch("chirpedex.cli.identify.BirdNETIdentifier")
+@patch("chirpedex.cli.identify.validate_audio_file")
 def test_handle_identify_json_output(mock_validate, mock_identifier_class) -> None:
     """Test JSON output from identify command."""
     test_path = Path("test.wav")
@@ -115,6 +116,7 @@ def test_handle_identify_json_output(mock_validate, mock_identifier_class) -> No
     assert result.exit_code == SUCCESS_EXIT_CODE
     assert json.loads(result.output)["species_common_name"] == "European Robin"
 
+
 def test_main_no_args() -> None:
     """Test main with no arguments."""
     with patch.object(__import__("sys"), "argv", ["chirpedex"]):
@@ -124,21 +126,18 @@ def test_main_no_args() -> None:
 
 def test_main_identify(capsys) -> None:
     """Test main with identify command."""
-    from pathlib import Path
-    from unittest.mock import patch
-
     mock_prediction = BirdPrediction(
         species_common_name="European Robin",
         species_scientific_name="Erithacus rubecula",
         confidence=0.95,
     )
 
-    with patch("chirpedex.cli.cli.BirdNETIdentifier") as mock_id:
+    with patch("chirpedex.cli.identify.BirdNETIdentifier") as mock_id:
         mock_instance = MagicMock()
         mock_instance.identify_from_file.return_value = mock_prediction
         mock_id.return_value = mock_instance
 
-        with patch("chirpedex.cli.cli.validate_audio_file") as mock_validate:
+        with patch("chirpedex.cli.identify.validate_audio_file") as mock_validate:
             mock_validate.return_value = Path("test.wav")
 
             with patch.object(
@@ -164,8 +163,8 @@ def test_main_identify_error_uses_stderr(capsys) -> None:
     assert "missing.wav" in captured.err
 
 
-@patch("chirpedex.cli.cli.BirdNETIdentifier")
-@patch("chirpedex.cli.cli.validate_audio_file")
+@patch("chirpedex.cli.identify.BirdNETIdentifier")
+@patch("chirpedex.cli.identify.validate_audio_file")
 def test_handle_multi_identify_success(
     mock_validate,
     mock_identifier_class,
@@ -188,8 +187,8 @@ def test_handle_multi_identify_success(
     mock_identifier_class.assert_called_once_with()
 
 
-@patch("chirpedex.cli.cli.BirdNETIdentifier")
-@patch("chirpedex.cli.cli.validate_audio_file")
+@patch("chirpedex.cli.identify.BirdNETIdentifier")
+@patch("chirpedex.cli.identify.validate_audio_file")
 def test_handle_multi_identify_partial_failure(
     mock_validate,
     mock_identifier_class,
