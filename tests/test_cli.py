@@ -132,28 +132,47 @@ def test_main_identify(capsys) -> None:
         confidence=0.95,
     )
 
-    with patch("chirpedex.cli.identify.BirdNETIdentifier") as mock_id:
-        mock_instance = MagicMock()
-        mock_instance.identify_from_file.return_value = mock_prediction
-        mock_id.return_value = mock_instance
+    mock_identifier = MagicMock()
+    mock_identifier.identify_from_file.return_value = mock_prediction
 
+    with patch("chirpedex.cli.identify.BirdNETIdentifier", return_value=mock_identifier):
         with patch("chirpedex.cli.identify.validate_audio_file") as mock_validate:
             mock_validate.return_value = Path("test.wav")
 
             with patch.object(
-                __import__("sys"), "argv", ["chirpedex", "identify", "test.wav"]
+                    __import__("sys"), "argv", ["chirpedex", "identify", "test.wav"]
             ):
                 exit_code = main()
-                assert exit_code == 0
+                assert exit_code == SUCCESS_EXIT_CODE
                 assert "Species: European Robin" in capsys.readouterr().out
+
+
+def test_main_multi_identify(capsys) -> None:
+    mock_prediction_one = BirdPrediction("European Robin", "Erithacus rubecula", 0.95)
+    mock_prediction_two = BirdPrediction("Common Blackbird", "Turdus merula", 0.85,)
+
+    mock_identifier = MagicMock()
+    mock_identifier.identify_from_file.side_effect = [mock_prediction_one, mock_prediction_two]
+
+    with patch("chirpedex.cli.identify.BirdNETIdentifier", return_value=mock_identifier):
+        with patch("chirpedex.cli.identify.validate_audio_file") as mock_validate:
+            mock_validate.side_effect = [Path("test1.wav"), Path("test2.wav")]
+
+            with patch.object(__import__("sys"), "argv", ["chirpedex", "identify", "test1.wav", "test2.wav"]):
+                exit_code = main()
+                assert exit_code == SUCCESS_EXIT_CODE
+
+                out = capsys.readouterr().out
+                assert "European Robin" in out
+                assert "Common Blackbird" in out
 
 
 def test_main_identify_error_uses_stderr(capsys) -> None:
     """Test that main prints command errors and returns their exit code."""
     with patch.object(
-        __import__("sys"),
-        "argv",
-        ["chirpedex", "identify", "missing.wav"],
+            __import__("sys"),
+            "argv",
+            ["chirpedex", "identify", "missing.wav"],
     ):
         exit_code = main()
 
@@ -166,8 +185,8 @@ def test_main_identify_error_uses_stderr(capsys) -> None:
 @patch("chirpedex.cli.identify.BirdNETIdentifier")
 @patch("chirpedex.cli.identify.validate_audio_file")
 def test_handle_multi_identify_success(
-    mock_validate,
-    mock_identifier_class,
+        mock_validate,
+        mock_identifier_class,
 ) -> None:
     """Test identification of multiple files with one identifier."""
     paths = [Path("first.wav"), Path("second.wav")]
@@ -190,8 +209,8 @@ def test_handle_multi_identify_success(
 @patch("chirpedex.cli.identify.BirdNETIdentifier")
 @patch("chirpedex.cli.identify.validate_audio_file")
 def test_handle_multi_identify_partial_failure(
-    mock_validate,
-    mock_identifier_class,
+        mock_validate,
+        mock_identifier_class,
 ) -> None:
     """Test that valid files are processed when another file is missing."""
     valid_path = Path("valid.wav")
@@ -212,3 +231,12 @@ def test_handle_multi_identify_partial_failure(
     assert result.is_error is True
     assert "European Robin" in result.output
     assert "missing.wav" in result.output
+
+@patch("chirpedex.api.server.start_server")
+def test_server_command(mock_server ):
+    """Test server command."""
+    mock_server.result.return_value = 0
+
+    with patch.object(__import__("sys"), "argv", ["chirpedex", "serve"]):
+        exit_code = main()
+        assert exit_code == SUCCESS_EXIT_CODE
