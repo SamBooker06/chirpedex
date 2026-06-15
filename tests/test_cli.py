@@ -70,9 +70,14 @@ def test_handle_identify_invalid_format() -> None:
 
 @patch("chirpedex.cli.identify.BirdNETIdentifier")
 @patch("chirpedex.cli.identify.validate_audio_file")
-def test_handle_identify_success(mock_validate, mock_identifier_class) -> None:
+def test_handle_identify_success(
+        mock_validate,
+        mock_identifier_class,
+        tmp_path,
+) -> None:
     """Test successful bird identification."""
-    test_path = Path("test.wav")
+    test_path = tmp_path / "test.wav"
+    test_path.write_bytes(b"audio")
     mock_validate.return_value = test_path
 
     mock_prediction = BirdPrediction(
@@ -89,14 +94,21 @@ def test_handle_identify_success(mock_validate, mock_identifier_class) -> None:
 
     assert result.exit_code == SUCCESS_EXIT_CODE
     assert "Species: European Robin" in result.output
-    mock_identifier.identify_from_file.assert_called_once_with(test_path)
+    mock_identifier.identify_from_file.assert_called_once()
+    audio_file = mock_identifier.identify_from_file.call_args.args[0]
+    assert Path(audio_file.name) == test_path
 
 
 @patch("chirpedex.cli.identify.BirdNETIdentifier")
 @patch("chirpedex.cli.identify.validate_audio_file")
-def test_handle_identify_json_output(mock_validate, mock_identifier_class) -> None:
+def test_handle_identify_json_output(
+        mock_validate,
+        mock_identifier_class,
+        tmp_path,
+) -> None:
     """Test JSON output from identify command."""
-    test_path = Path("test.wav")
+    test_path = tmp_path / "test.wav"
+    test_path.write_bytes(b"audio")
     mock_validate.return_value = test_path
 
     test_time = datetime.now()
@@ -124,8 +136,10 @@ def test_main_no_args() -> None:
         assert exit_code == 0
 
 
-def test_main_identify(capsys) -> None:
+def test_main_identify(capsys, tmp_path) -> None:
     """Test main with identify command."""
+    test_path = tmp_path / "test.wav"
+    test_path.write_bytes(b"audio")
     mock_prediction = BirdPrediction(
         species_common_name="European Robin",
         species_scientific_name="Erithacus rubecula",
@@ -137,7 +151,7 @@ def test_main_identify(capsys) -> None:
 
     with patch("chirpedex.cli.identify.BirdNETIdentifier", return_value=mock_identifier):
         with patch("chirpedex.cli.identify.validate_audio_file") as mock_validate:
-            mock_validate.return_value = Path("test.wav")
+            mock_validate.return_value = test_path
 
             with patch.object(
                     __import__("sys"), "argv", ["chirpedex", "identify", "test.wav"]
@@ -147,7 +161,11 @@ def test_main_identify(capsys) -> None:
                 assert "Species: European Robin" in capsys.readouterr().out
 
 
-def test_main_multi_identify(capsys) -> None:
+def test_main_multi_identify(capsys, tmp_path) -> None:
+    test_paths = [tmp_path / "test1.wav", tmp_path / "test2.wav"]
+    for test_path in test_paths:
+        test_path.write_bytes(b"audio")
+
     mock_prediction_one = BirdPrediction("European Robin", "Erithacus rubecula", 0.95)
     mock_prediction_two = BirdPrediction("Common Blackbird", "Turdus merula", 0.85,)
 
@@ -156,7 +174,7 @@ def test_main_multi_identify(capsys) -> None:
 
     with patch("chirpedex.cli.identify.BirdNETIdentifier", return_value=mock_identifier):
         with patch("chirpedex.cli.identify.validate_audio_file") as mock_validate:
-            mock_validate.side_effect = [Path("test1.wav"), Path("test2.wav")]
+            mock_validate.side_effect = test_paths
 
             with patch.object(__import__("sys"), "argv", ["chirpedex", "identify", "test1.wav", "test2.wav"]):
                 exit_code = main()
@@ -187,9 +205,12 @@ def test_main_identify_error_uses_stderr(capsys) -> None:
 def test_handle_multi_identify_success(
         mock_validate,
         mock_identifier_class,
+        tmp_path,
 ) -> None:
     """Test identification of multiple files with one identifier."""
-    paths = [Path("first.wav"), Path("second.wav")]
+    paths = [tmp_path / "first.wav", tmp_path / "second.wav"]
+    for path in paths:
+        path.write_bytes(b"audio")
     mock_validate.side_effect = paths
     mock_identifier = MagicMock()
     mock_identifier.identify_from_file.side_effect = [
@@ -211,9 +232,11 @@ def test_handle_multi_identify_success(
 def test_handle_multi_identify_partial_failure(
         mock_validate,
         mock_identifier_class,
+        tmp_path,
 ) -> None:
     """Test that valid files are processed when another file is missing."""
-    valid_path = Path("valid.wav")
+    valid_path = tmp_path / "valid.wav"
+    valid_path.write_bytes(b"audio")
     mock_validate.side_effect = [
         valid_path,
         FileNotFoundError_("Audio file not found: missing.wav"),
