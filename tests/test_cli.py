@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from chirpedex.cli import (
+from chirpedex.cli.cli import (
     create_parser,
     handle_identify,
     handle_multi_identify,
@@ -56,7 +56,7 @@ def test_handle_identify_file_not_found() -> None:
 
 def test_handle_identify_invalid_format() -> None:
     """Test handle_identify with unsupported file format."""
-    with patch("chirpedex.cli.validate_audio_file") as mock_validate:
+    with patch("chirpedex.cli.identify.validate_audio_file") as mock_validate:
         from chirpedex.errors import InvalidAudioFormatError
 
         mock_validate.side_effect = InvalidAudioFormatError(
@@ -68,11 +68,16 @@ def test_handle_identify_invalid_format() -> None:
     assert result.output == "Error: Unsupported audio format: .txt"
 
 
-@patch("chirpedex.cli.BirdNETIdentifier")
-@patch("chirpedex.cli.validate_audio_file")
-def test_handle_identify_success(mock_validate, mock_identifier_class) -> None:
+@patch("chirpedex.cli.identify.BirdNETIdentifier")
+@patch("chirpedex.cli.identify.validate_audio_file")
+def test_handle_identify_success(
+        mock_validate,
+        mock_identifier_class,
+        tmp_path,
+) -> None:
     """Test successful bird identification."""
-    test_path = Path("test.wav")
+    test_path = tmp_path / "test.wav"
+    test_path.write_bytes(b"audio")
     mock_validate.return_value = test_path
 
     mock_prediction = BirdPrediction(
@@ -89,13 +94,21 @@ def test_handle_identify_success(mock_validate, mock_identifier_class) -> None:
 
     assert result.exit_code == SUCCESS_EXIT_CODE
     assert "Species: European Robin" in result.output
-    mock_identifier.identify_from_file.assert_called_once_with(test_path)
+    mock_identifier.identify_from_file.assert_called_once()
+    audio_file = mock_identifier.identify_from_file.call_args.args[0]
+    assert Path(audio_file.name) == test_path
 
-@patch("chirpedex.cli.BirdNETIdentifier")
-@patch("chirpedex.cli.validate_audio_file")
-def test_handle_identify_json_output(mock_validate, mock_identifier_class) -> None:
+
+@patch("chirpedex.cli.identify.BirdNETIdentifier")
+@patch("chirpedex.cli.identify.validate_audio_file")
+def test_handle_identify_json_output(
+        mock_validate,
+        mock_identifier_class,
+        tmp_path,
+) -> None:
     """Test JSON output from identify command."""
-    test_path = Path("test.wav")
+    test_path = tmp_path / "test.wav"
+    test_path.write_bytes(b"audio")
     mock_validate.return_value = test_path
 
     test_time = datetime.now()
@@ -115,6 +128,7 @@ def test_handle_identify_json_output(mock_validate, mock_identifier_class) -> No
     assert result.exit_code == SUCCESS_EXIT_CODE
     assert json.loads(result.output)["species_common_name"] == "European Robin"
 
+
 def test_main_no_args() -> None:
     """Test main with no arguments."""
     with patch.object(__import__("sys"), "argv", ["chirpedex"]):
@@ -122,39 +136,61 @@ def test_main_no_args() -> None:
         assert exit_code == 0
 
 
-def test_main_identify(capsys) -> None:
+def test_main_identify(capsys, tmp_path) -> None:
     """Test main with identify command."""
-    from pathlib import Path
-    from unittest.mock import patch
-
+    test_path = tmp_path / "test.wav"
+    test_path.write_bytes(b"audio")
     mock_prediction = BirdPrediction(
         species_common_name="European Robin",
         species_scientific_name="Erithacus rubecula",
         confidence=0.95,
     )
 
-    with patch("chirpedex.cli.BirdNETIdentifier") as mock_id:
-        mock_instance = MagicMock()
-        mock_instance.identify_from_file.return_value = mock_prediction
-        mock_id.return_value = mock_instance
+    mock_identifier = MagicMock()
+    mock_identifier.identify_from_file.return_value = mock_prediction
 
-        with patch("chirpedex.cli.validate_audio_file") as mock_validate:
-            mock_validate.return_value = Path("test.wav")
+    with patch("chirpedex.cli.identify.BirdNETIdentifier", return_value=mock_identifier):
+        with patch("chirpedex.cli.identify.validate_audio_file") as mock_validate:
+            mock_validate.return_value = test_path
 
             with patch.object(
-                __import__("sys"), "argv", ["chirpedex", "identify", "test.wav"]
+                    __import__("sys"), "argv", ["chirpedex", "identify", "test.wav"]
             ):
                 exit_code = main()
-                assert exit_code == 0
+                assert exit_code == SUCCESS_EXIT_CODE
                 assert "Species: European Robin" in capsys.readouterr().out
+
+
+def test_main_multi_identify(capsys, tmp_path) -> None:
+    test_paths = [tmp_path / "test1.wav", tmp_path / "test2.wav"]
+    for test_path in test_paths:
+        test_path.write_bytes(b"audio")
+
+    mock_prediction_one = BirdPrediction("European Robin", "Erithacus rubecula", 0.95)
+    mock_prediction_two = BirdPrediction("Common Blackbird", "Turdus merula", 0.85,)
+
+    mock_identifier = MagicMock()
+    mock_identifier.identify_from_file.side_effect = [mock_prediction_one, mock_prediction_two]
+
+    with patch("chirpedex.cli.identify.BirdNETIdentifier", return_value=mock_identifier):
+        with patch("chirpedex.cli.identify.validate_audio_file") as mock_validate:
+            mock_validate.side_effect = test_paths
+
+            with patch.object(__import__("sys"), "argv", ["chirpedex", "identify", "test1.wav", "test2.wav"]):
+                exit_code = main()
+                assert exit_code == SUCCESS_EXIT_CODE
+
+                out = capsys.readouterr().out
+                assert "European Robin" in out
+                assert "Common Blackbird" in out
 
 
 def test_main_identify_error_uses_stderr(capsys) -> None:
     """Test that main prints command errors and returns their exit code."""
     with patch.object(
-        __import__("sys"),
-        "argv",
-        ["chirpedex", "identify", "missing.wav"],
+            __import__("sys"),
+            "argv",
+            ["chirpedex", "identify", "missing.wav"],
     ):
         exit_code = main()
 
@@ -164,14 +200,17 @@ def test_main_identify_error_uses_stderr(capsys) -> None:
     assert "missing.wav" in captured.err
 
 
-@patch("chirpedex.cli.BirdNETIdentifier")
-@patch("chirpedex.cli.validate_audio_file")
+@patch("chirpedex.cli.identify.BirdNETIdentifier")
+@patch("chirpedex.cli.identify.validate_audio_file")
 def test_handle_multi_identify_success(
-    mock_validate,
-    mock_identifier_class,
+        mock_validate,
+        mock_identifier_class,
+        tmp_path,
 ) -> None:
     """Test identification of multiple files with one identifier."""
-    paths = [Path("first.wav"), Path("second.wav")]
+    paths = [tmp_path / "first.wav", tmp_path / "second.wav"]
+    for path in paths:
+        path.write_bytes(b"audio")
     mock_validate.side_effect = paths
     mock_identifier = MagicMock()
     mock_identifier.identify_from_file.side_effect = [
@@ -188,14 +227,16 @@ def test_handle_multi_identify_success(
     mock_identifier_class.assert_called_once_with()
 
 
-@patch("chirpedex.cli.BirdNETIdentifier")
-@patch("chirpedex.cli.validate_audio_file")
+@patch("chirpedex.cli.identify.BirdNETIdentifier")
+@patch("chirpedex.cli.identify.validate_audio_file")
 def test_handle_multi_identify_partial_failure(
-    mock_validate,
-    mock_identifier_class,
+        mock_validate,
+        mock_identifier_class,
+        tmp_path,
 ) -> None:
     """Test that valid files are processed when another file is missing."""
-    valid_path = Path("valid.wav")
+    valid_path = tmp_path / "valid.wav"
+    valid_path.write_bytes(b"audio")
     mock_validate.side_effect = [
         valid_path,
         FileNotFoundError_("Audio file not found: missing.wav"),
@@ -213,3 +254,12 @@ def test_handle_multi_identify_partial_failure(
     assert result.is_error is True
     assert "European Robin" in result.output
     assert "missing.wav" in result.output
+
+@patch("chirpedex.api.server.start_server")
+def test_server_command(mock_server ):
+    """Test server command."""
+    mock_server.result.return_value = 0
+
+    with patch.object(__import__("sys"), "argv", ["chirpedex", "serve"]):
+        exit_code = main()
+        assert exit_code == SUCCESS_EXIT_CODE

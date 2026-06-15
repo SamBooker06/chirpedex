@@ -1,7 +1,7 @@
 """Bird identification interface and implementations."""
 
 from abc import ABC, abstractmethod
-from pathlib import Path
+from typing import IO
 
 from chirpedex.location import Location
 from chirpedex.models import BirdPrediction
@@ -13,14 +13,14 @@ class BirdIdentifier(ABC):
     @abstractmethod
     def identify_from_file(
         self,
-        audio_path: Path,
+        audio_file: IO[bytes],
         location: Location | None = None,
     ) -> BirdPrediction:
         """
         Identify a bird species from an audio file.
 
         Args:
-            audio_path: Path to the audio file.
+            audio_file: Binary audio file object.
             location: The location the recording took place
 
         Returns:

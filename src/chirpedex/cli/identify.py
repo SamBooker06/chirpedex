@@ -1,85 +1,15 @@
-"""Command-line interface for Chirpedex."""
-
-import argparse
 import json
-import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
 from chirpedex.audio import validate_audio_file
-from chirpedex.errors import ChirpedexError, FileNotFoundError_, ModelError
-from chirpedex.exit_codes import (
-    CHIRPEDEX_ERROR_EXIT_CODE,
-    FILE_NOT_FOUND_ERROR_EXIT_CODE,
-    GENERIC_ERROR_EXIT_CODE,
-    IMPORT_ERROR_EXIT_CODE,
-    MODEL_ERROR_EXIT_CODE,
-    SUCCESS_EXIT_CODE,
-)
+from chirpedex.cli.command import CommandResult
+from chirpedex.errors import ModelError, FileNotFoundError_, ChirpedexError
+from chirpedex.exit_codes import MODEL_ERROR_EXIT_CODE, FILE_NOT_FOUND_ERROR_EXIT_CODE, CHIRPEDEX_ERROR_EXIT_CODE, \
+    IMPORT_ERROR_EXIT_CODE, GENERIC_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE
+
 from chirpedex.identifiers.birdnet_identifier import BirdNETIdentifier
 from chirpedex.models import BirdPrediction
-
-
-@dataclass(frozen=True)
-class CommandResult:
-    """The output and exit status produced by a CLI command."""
-
-    output: str
-    exit_code: int
-    is_error: bool = False
-
-
-def create_parser() -> argparse.ArgumentParser:
-    """Create and return the CLI argument parser."""
-    parser = argparse.ArgumentParser(
-        prog="chirpedex",
-        description="A portable bird identification application.",
-    )
-
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    # Identify command
-    identify_parser = subparsers.add_parser(
-        "identify",
-        help="Identify a bird species from an audio file.",
-    )
-    identify_parser.add_argument(
-        "audio_path",
-        help="Path to the audio file to analyze.",
-        nargs="+",
-    )
-    identify_parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output results as JSON.",
-    )
-
-    return parser
-
-
-def main() -> int:
-    """Main CLI entry point."""
-    parser = create_parser()
-    args = parser.parse_args()
-
-    if args.command is None:
-        parser.print_help()
-        return 0
-
-    if args.command == "identify":
-        if len(args.audio_path) > 1:
-            result = handle_multi_identify(args.audio_path, args.json)
-        else:
-            result = handle_identify(args.audio_path[0], args.json)
-
-        if result.output:
-            stream = sys.stderr if result.is_error else sys.stdout
-            print(result.output, file=stream)
-        return result.exit_code
-
-    parser.print_help()
-    return 0
 
 
 def _prediction_to_dict(prediction: BirdPrediction) -> dict[str, object]:
@@ -112,7 +42,8 @@ def _identify(
         identifier: BirdNETIdentifier,
 ) -> BirdPrediction:
     """Identify one validated audio file."""
-    return identifier.identify_from_file(audio_path)
+    with audio_path.open("rb") as f:
+        return identifier.identify_from_file(f)
 
 
 def _error_result(exc: Exception) -> CommandResult:
@@ -121,7 +52,6 @@ def _error_result(exc: Exception) -> CommandResult:
         return CommandResult(
             output=(
                 f"Model Error: {exc}\n"
-                "Note: First run may download the BirdNET model (~1 GB)."
             ),
             exit_code=MODEL_ERROR_EXIT_CODE,
             is_error=True,
@@ -168,6 +98,7 @@ def handle_identify(
         validated_path = validate_audio_file(audio_path)
         identifier = BirdNETIdentifier()
         prediction = _identify(validated_path, identifier)
+
         return CommandResult(
             output=_format_prediction(prediction, json_output),
             exit_code=SUCCESS_EXIT_CODE,
@@ -240,7 +171,3 @@ def handle_multi_identify(
         exit_code=exit_code,
         is_error=bool(errors),
     )
-
-
-if __name__ == "__main__":
-    sys.exit(main())
