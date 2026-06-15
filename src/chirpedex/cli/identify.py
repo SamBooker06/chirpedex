@@ -51,7 +51,6 @@ def _error_result(exc: Exception) -> CommandResult:
         return CommandResult(
             output=(
                 f"Model Error: {exc}\n"
-                "Note: First run may download the BirdNET model (~1 GB)."
             ),
             exit_code=MODEL_ERROR_EXIT_CODE,
             is_error=True,
