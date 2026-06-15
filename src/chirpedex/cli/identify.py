@@ -42,7 +42,8 @@ def _identify(
         identifier: BirdNETIdentifier,
 ) -> BirdPrediction:
     """Identify one validated audio file."""
-    return identifier.identify_from_file(audio_path)
+    with audio_path.open("rb") as f:
+        return identifier.identify_from_file(f)
 
 
 def _error_result(exc: Exception) -> CommandResult:
@@ -97,6 +98,7 @@ def handle_identify(
         validated_path = validate_audio_file(audio_path)
         identifier = BirdNETIdentifier()
         prediction = _identify(validated_path, identifier)
+
         return CommandResult(
             output=_format_prediction(prediction, json_output),
             exit_code=SUCCESS_EXIT_CODE,
