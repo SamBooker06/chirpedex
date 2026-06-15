@@ -2,8 +2,7 @@ import os
 import sys
 
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
-from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, IO, Iterator
 
 from chirpedex.identifiers.identifier import BirdIdentifier
 from chirpedex.location import Location
@@ -45,8 +44,11 @@ class BirdNETIdentifier(BirdIdentifier):
 
         try:
             with self._suppress_library_output():
-                from birdnetlib import Recording
+                from birdnetlib import RecordingFileObject
                 from birdnetlib.analyzer import Analyzer
+
+                self._analyser = Analyzer()
+                self._recording_class = RecordingFileObject
         except ImportError as exc:
             from chirpedex.errors import ModelError
 
@@ -60,23 +62,17 @@ class BirdNETIdentifier(BirdIdentifier):
                 f"A birdnetlib dependency is missing: {message}"
             ) from exc
 
-        self._recording_class = Recording
-        self._analyzer_class = Analyzer
-
-        with self._suppress_library_output():
-            self._analyser = self._analyzer_class()
-
     def identify_from_file(
             self,
-            audio_path: Path,
+            audio_file: IO[bytes],
             location: Location | None = None,
     ) -> BirdPrediction:
         """
         Identify a bird species using BirdNET.
 
         Args:
-            audio_path: Path to the audio file.
-            location: The location the recording took place
+            audio_file: The in-memory audio file.
+            location: The location where the recording took place
 
         Returns:
             BirdPrediction: The top prediction. from the model.
@@ -93,7 +89,7 @@ class BirdNETIdentifier(BirdIdentifier):
 
                 recording = self._recording_class(
                     self._analyser,
-                    str(audio_path),
+                    audio_file,
                     lat=latitude,
                     lon=longitude,
                     min_conf=self.minimum_confidence,
@@ -118,16 +114,12 @@ class BirdNETIdentifier(BirdIdentifier):
                     species_common_name=common_name,
                     species_scientific_name=scientific_name,
                     confidence=float(confidence),
-                    source_audio_path=audio_path,
                 )
 
         except IdentificationError:
             raise
-        except FileNotFoundError as exc:
-            raise IdentificationError(
-                f"Could not find the bird species file: {audio_path}"
-            ) from exc
+
         except Exception as e:
             raise IdentificationError(
-                f"Failed to identify bird in {audio_path}: {e}"
+                f"Failed to identify bird: {e}"
             ) from e
