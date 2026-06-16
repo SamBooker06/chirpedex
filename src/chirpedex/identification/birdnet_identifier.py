@@ -5,7 +5,7 @@ import sys
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from typing import Any, IO, Iterator, Optional
 
-from chirpedex.identifiers.identifier import BirdIdentifier
+from chirpedex.identification.identifier import BirdIdentifier
 from chirpedex.location import Location
 from chirpedex.models import BirdPrediction
 

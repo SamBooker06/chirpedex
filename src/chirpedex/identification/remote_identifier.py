@@ -5,10 +5,9 @@ import io
 from typing import Optional
 
 import httpx
-import pydantic
 
 from chirpedex.api import DEFAULT_API_PORT
-from chirpedex.identifiers.identifier import BirdIdentifier
+from chirpedex.identification.identifier import BirdIdentifier
 from chirpedex.location import Location
 from chirpedex.models import BirdPrediction
 
@@ -25,4 +24,3 @@ class RemoteIdentifier(BirdIdentifier):
         async with httpx.AsyncClient() as session:
             response = await session.post(f"{self.host}:{self.port}/identify", files={"audio_file": audio_file})
             data = await response.aread()
-            BirdPrediction.model_validate(data)
