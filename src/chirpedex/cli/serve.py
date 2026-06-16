@@ -1,14 +1,21 @@
 from chirpedex.cli.exit_codes import ExitCode
-from chirpedex.cli.command import CommandResult
+from chirpedex.cli.command import CommandResult, Command
 
 
-def handle_serve_command(host: str, port: int) -> CommandResult:
-    try:
-        from chirpedex.api.server import start_server
+class ServeCommand(Command):
+    def __init__(self, host: str, port: int):
+        super().__init__()
 
-        start_server(host, port)
+        self.host = host
+        self.port = port
 
-        return CommandResult("Server started successfully", ExitCode.SUCCESS_EXIT_CODE)
+    def execute(self) -> CommandResult:
+        try:
+            from chirpedex.api.server import start_server
 
-    except ImportError:
-        return CommandResult("Could not start chirpedex server", ExitCode.IMPORT_ERROR_EXIT_CODE)
+            start_server(self.host, self.port)
+
+            return CommandResult(ExitCode.SUCCESS_EXIT_CODE, "")
+
+        except ImportError:
+            return CommandResult(ExitCode.IMPORT_ERROR_EXIT_CODE, "Could not start chirpedex server", is_error=True)
