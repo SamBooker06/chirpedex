@@ -17,6 +17,7 @@ def create_identifier():
     """Create an identifier without importing the real BirdNET dependency."""
     birdnetlib = ModuleType("birdnetlib")
     birdnetlib.RecordingFileObject = MagicMock()
+    birdnetlib.RecordingBuffer = MagicMock()
     analyzer_module = ModuleType("birdnetlib.analyzer")
     analyzer_module.Analyzer = MagicMock()
 
@@ -27,7 +28,7 @@ def create_identifier():
                 "birdnetlib.analyzer": analyzer_module,
             },
     ):
-        from chirpedex.identifiers.birdnet_identifier import BirdNETIdentifier
+        from chirpedex.identification.birdnet_identifier import BirdNETIdentifier
 
         return BirdNETIdentifier()
 
@@ -46,7 +47,7 @@ class TestBirdNETIdentifier:
 
         with patch("builtins.__import__", side_effect=import_without_birdnetlib):
             with pytest.raises(ModelError):
-                from chirpedex.identifiers.birdnet_identifier import BirdNETIdentifier
+                from chirpedex.identification.birdnet_identifier import BirdNETIdentifier
 
                 BirdNETIdentifier()
 
@@ -62,7 +63,7 @@ class TestBirdNETIdentifier:
         ]
 
         identifier = create_identifier()
-        identifier._recording_class = MagicMock(return_value=mock_recording)
+        identifier._file_recording_class = MagicMock(return_value=mock_recording)
         result = identifier.identify_from_file(io.BytesIO(b"audio"))
 
         assert isinstance(result, BirdPrediction)
@@ -76,7 +77,7 @@ class TestBirdNETIdentifier:
         mock_recording.detection_list = []
 
         identifier = create_identifier()
-        identifier._recording_class = MagicMock(return_value=mock_recording)
+        identifier._file_recording_class = MagicMock(return_value=mock_recording)
 
         with pytest.raises(IdentificationError, match="No bird species detected"):
             identifier.identify_from_file(io.BytesIO(b"audio"))
@@ -84,7 +85,7 @@ class TestBirdNETIdentifier:
     def test_identify_exception_handling(self) -> None:
         """Test that exceptions are caught and wrapped."""
         identifier = create_identifier()
-        identifier._recording_class = MagicMock(side_effect=RuntimeError("Test error"))
+        identifier._file_recording_class = MagicMock(side_effect=RuntimeError("Test error"))
 
         with pytest.raises(IdentificationError, match="Test error"):
             identifier.identify_from_file(io.BytesIO(b"audio"))
@@ -101,6 +102,7 @@ class TestBirdNETIdentifier:
         birdnetlib = ModuleType("birdnetlib")
         analyzer_module = ModuleType("birdnetlib.analyzer")
         birdnetlib.RecordingFileObject = MagicMock()
+        birdnetlib.RecordingBuffer = MagicMock()
         analyzer_module.Analyzer = noisy_analyzer
 
         with patch.dict(
@@ -110,7 +112,7 @@ class TestBirdNETIdentifier:
                 "birdnetlib.analyzer": analyzer_module,
             },
         ):
-            from chirpedex.identifiers.birdnet_identifier import BirdNETIdentifier
+            from chirpedex.identification.birdnet_identifier import BirdNETIdentifier
 
             identifier = BirdNETIdentifier()
 
@@ -130,7 +132,7 @@ class TestBirdNETIdentifier:
             os.write(2, b"native analysis stderr\n")
 
         mock_recording.analyze.side_effect = noisy_analyze
-        identifier._recording_class = MagicMock(return_value=mock_recording)
+        identifier._file_recording_class = MagicMock(return_value=mock_recording)
         identifier.identify_from_file(io.BytesIO(b"audio"))
 
         captured = capfd.readouterr()

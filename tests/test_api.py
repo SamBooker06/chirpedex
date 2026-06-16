@@ -16,7 +16,7 @@ from chirpedex.api.server import (
     get_identifier,
     start_server,
 )
-from chirpedex.exit_codes import SUCCESS_EXIT_CODE
+from chirpedex.cli.exit_codes import ExitCode
 
 client = TestClient(app)
 
@@ -71,7 +71,7 @@ def test_shutdown():
     assert SERVER_SHUTDOWN in buffer + output
 
     # SUCCESS_EXIT_CODE in the event we signal handle in the future
-    assert proc.returncode in [-signal.SIGTERM, SUCCESS_EXIT_CODE]
+    assert proc.returncode in [-signal.SIGTERM, ExitCode.SUCCESS_EXIT_CODE]
 
 
 @patch("uvicorn.run")
