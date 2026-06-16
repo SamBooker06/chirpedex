@@ -1,19 +1,21 @@
 """Bird identification interface and implementations."""
-
-from abc import ABC, abstractmethod
-from typing import IO
+import io
+from abc import ABC, abstractmethod, ABCMeta
+from typing import IO, Optional
 
 from chirpedex.location import Location
 from chirpedex.models import BirdPrediction
 
 
-class BirdIdentifier(ABC):
+class BirdIdentifier(ABC, metaclass=ABCMeta):
     """Abstract base class for bird identification backends."""
+
+    MinimumConfidence = 0.25
 
     @abstractmethod
     def identify_from_file(
         self,
-        audio_file: IO[bytes],
+        audio_file: io.BytesIO,
         location: Location | None = None,
     ) -> BirdPrediction:
         """
@@ -30,3 +32,7 @@ class BirdIdentifier(ABC):
             IdentificationError: If identification fails.
         """
         raise NotImplementedError
+
+    @abstractmethod
+    def identify_from_buffer(self, stream: io.BytesIO, location: Optional[Location] = None):
+        pass

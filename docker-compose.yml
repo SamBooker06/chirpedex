@@ -2,13 +2,13 @@ services:
   chirpedex:
     build:
       context: .
-      dockerfile: images/id.Dockerfile
+      dockerfile: images/identity.Dockerfile
     profiles:
       - prod
   chirpedex-test:
     build:
       context: .
-      dockerfile: images/id.Dockerfile
+      dockerfile: images/identity.Dockerfile
       target: test
     profiles:
       - testing
