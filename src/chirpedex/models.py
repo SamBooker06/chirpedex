@@ -25,3 +25,17 @@ class BirdPrediction:
         lines.append(f"Confidence: {self.confidence:.2f}")
         return "\n".join(lines)
 
+    def to_dict(self) -> dict:
+        return {
+            "species_common_name": self.species_common_name,
+            "species_scientific_name": self.species_scientific_name,
+            "confidence": self.confidence,
+            "timestamp": self.timestamp.isoformat(),
+            "source_audio_path": (
+                str(self.source_audio_path)
+                if self.source_audio_path is not None
+                else None
+            ),
+        }
+
+
