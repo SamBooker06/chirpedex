@@ -4,9 +4,10 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+from pydantic import BaseModel
 
-@dataclass
-class BirdPrediction:
+
+class BirdPrediction(BaseModel):
     """A prediction of a bird species from audio analysis."""
 
     species_common_name: str

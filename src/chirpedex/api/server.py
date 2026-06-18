@@ -61,7 +61,7 @@ async def identify(audio_file: UploadFile, identifier: IdentifierInstance):
     with io.BytesIO(contents) as f:
         res = await asyncio.to_thread(lambda: identifier.identify_from_file(f))
 
-        return json.dumps(str(res))
+        return json.dumps(res.to_dict())
 
 
 @app.websocket("/identify/stream")
