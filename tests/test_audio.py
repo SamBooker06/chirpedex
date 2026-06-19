@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from chirpedex.audio import validate_audio_file, SUPPORTED_FORMATS
-from chirpedex.errors import FileNotFoundError_, InvalidAudioFormatError
+from chirpedex.core.audio import validate_audio_file, SUPPORTED_FORMATS
+from chirpedex.core.errors import FileNotFoundError_, InvalidAudioFormatError
 
 
 def test_supported_formats() -> None:
@@ -33,7 +33,7 @@ def test_validate_audio_file_invalid_format(tmp_path) -> None:
 
 def test_validate_audio_file_valid_wav(tmp_path) -> None:
     """Test validation with valid WAV file."""
-    test_file = tmp_path / "test.wav"
+    test_file = tmp_path / "robin.wav"
     test_file.touch()
 
     result = validate_audio_file(test_file)
@@ -64,7 +64,7 @@ def test_validate_audio_file_accepts_string() -> None:
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
-        test_file = tmp_path / "test.wav"
+        test_file = tmp_path / "robin.wav"
         test_file.touch()
 
         # Test with Path object

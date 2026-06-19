@@ -1,3 +1,7 @@
+"""
+The only role of the server is to identify the birds - it is not responsible for keeping track
+"""
+
 import asyncio
 import io
 import json
@@ -6,24 +10,27 @@ from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Annotated, Any, AsyncGenerator
 
-import fastapi
-from fastapi import Depends, UploadFile
+from fastapi import Depends, UploadFile, FastAPI
+from starlette.websockets import WebSocket
 
 import chirpedex
-from chirpedex.api import DEFAULT_HOST, DEFAULT_API_PORT
-from chirpedex.identifiers.birdnet_identifier import BirdNETIdentifier
+from chirpedex.client.api import DEFAULT_HOST, DEFAULT_API_PORT
+from chirpedex.core.identification.birdnet_identifier import BirdNETIdentifier
+from chirpedex.core.identification import BirdIdentifier
 
 SERVER_READY = "[SERVER READY]"
 SERVER_SHUTDOWN = "[SERVER SHUTDOWN]"
 
+CHUNK_SIZE = 1024 * 1024
+
 
 @lru_cache(maxsize=1)
-def get_identifier() -> BirdNETIdentifier:
+def get_identifier() -> BirdIdentifier:
     """Return the shared identifier used by API requests."""
     return BirdNETIdentifier()
 
 
-IdentifierInstance = Annotated[BirdNETIdentifier, Depends(get_identifier)]
+IdentifierInstance = Annotated[BirdIdentifier, Depends(get_identifier)]
 
 
 @asynccontextmanager
@@ -34,7 +41,7 @@ async def lifespan(_) -> AsyncGenerator[None, Any]:
     print(SERVER_SHUTDOWN)
 
 
-app = fastapi.FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/")
@@ -58,7 +65,12 @@ async def identify(audio_file: UploadFile, identifier: IdentifierInstance):
     with io.BytesIO(contents) as f:
         res = await asyncio.to_thread(lambda: identifier.identify_from_file(f))
 
-        return json.dumps(str(res))
+        return json.dumps(res.to_dict())
+
+
+@app.websocket("/identify/stream")
+async def identify_stream(ws: WebSocket, identifier: IdentifierInstance):
+    raise NotImplementedError("PCM streaming not implemented yet.")
 
 
 def start_server(host: str = DEFAULT_HOST, port: int = DEFAULT_API_PORT) -> None:

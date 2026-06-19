@@ -10,6 +10,7 @@ RUN uv sync --frozen --no-install-project --no-dev
 
 COPY ./src ./src
 
+# Build project without dev dependencies, ensuring lock is followed and is not editable install
 RUN uv sync --frozen --no-dev --no-editable
 
 FROM build AS test
@@ -30,7 +31,7 @@ RUN groupadd --system --gid 999 nonroot && \
 COPY --from=build /app/.venv /app/.venv
 
 USER nonroot
-# Rewrite so that the uv binary is moved and we copy the lock and stop using pip
+
 # Entry point
 
 ENV PATH="/app/.venv/bin:$PATH"

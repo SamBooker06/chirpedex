@@ -1,19 +1,23 @@
+import io
 import os
 import sys
 
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
-from typing import Any, IO, Iterator
+from typing import Any, IO, Iterator, Optional
 
-from chirpedex.identifiers.identifier import BirdIdentifier
-from chirpedex.location import Location
-from chirpedex.models import BirdPrediction
+from chirpedex.core.identification import BirdIdentifier
+from chirpedex.core.location import Location
+from chirpedex.core.models import BirdPrediction
 
+
+SAMPLE_RATE = 48e3
 MIN_CONFIDENCE = 0.25
 
 
 class BirdNETIdentifier(BirdIdentifier):
     """Bird identification using BirdNET model."""
 
+    # Tensorflow keeps spitting out a bunch of unneeded info, so suppressed for the cli
     @contextmanager
     def _suppress_library_output(self) -> Iterator[None]:
         """Suppress Python and native output emitted by BirdNET."""
@@ -44,13 +48,15 @@ class BirdNETIdentifier(BirdIdentifier):
 
         try:
             with self._suppress_library_output():
-                from birdnetlib import RecordingFileObject
+                from birdnetlib import RecordingFileObject, RecordingBuffer
                 from birdnetlib.analyzer import Analyzer
 
                 self._analyser = Analyzer()
-                self._recording_class = RecordingFileObject
+                self._file_recording_class = RecordingFileObject
+                self._buffer_recording_class = RecordingBuffer
+
         except ImportError as exc:
-            from chirpedex.errors import ModelError
+            from chirpedex.core.errors import ModelError
 
             message = str(exc)
             if "birdnetlib" in message:
@@ -65,7 +71,7 @@ class BirdNETIdentifier(BirdIdentifier):
     def identify_from_file(
             self,
             audio_file: IO[bytes],
-            location: Location | None = None,
+            location: Optional[Location] = None,
     ) -> BirdPrediction:
         """
         Identify a bird species using BirdNET.
@@ -80,14 +86,14 @@ class BirdNETIdentifier(BirdIdentifier):
         Raises:
             IdentificationError: If identification fails.
         """
-        from chirpedex.errors import IdentificationError
+        from chirpedex.core.errors import IdentificationError
 
         try:
             with self._suppress_library_output():
                 latitude = location.latitude if location else None
                 longitude = location.longitude if location else None
 
-                recording = self._recording_class(
+                recording = self._file_recording_class(
                     self._analyser,
                     audio_file,
                     lat=latitude,
@@ -123,3 +129,7 @@ class BirdNETIdentifier(BirdIdentifier):
             raise IdentificationError(
                 f"Failed to identify bird: {e}"
             ) from e
+
+    def identify_from_buffer(self, stream: io.BytesIO, location: Optional[Location] = None) -> BirdPrediction:
+        raise NotImplementedError("PCM streaming not yet implemented.")
+

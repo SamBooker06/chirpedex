@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from chirpedex.errors import FileNotFoundError_, InvalidAudioFormatError
+from chirpedex.core.errors import FileNotFoundError_, InvalidAudioFormatError
 
 # Supported audio formats
 SUPPORTED_FORMATS = {".wav", ".mp3", ".flac", ".ogg", ".m4a"}
