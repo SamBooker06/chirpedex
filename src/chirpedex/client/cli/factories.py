@@ -1,11 +1,11 @@
 from argparse import Namespace, ArgumentError
 
-from chirpedex.cli.command import Command
-from chirpedex.cli.identify.identify_multi import IdentifyMultiCommand
-from chirpedex.cli.identify.identify_single import IdentifySingleCommand
-from chirpedex.cli.serve import ServeCommand
-from chirpedex.identification.birdnet_identifier import BirdNETIdentifier
-from chirpedex.identification.remote_identifier import RemoteIdentifier
+from chirpedex.core.cli.command import Command
+from chirpedex.core.cli.identify.identify_multi import IdentifyMultiCommand
+from chirpedex.core.cli.identify.identify_single import IdentifySingleCommand
+from chirpedex.core.cli.serve import ServeCommand
+from chirpedex.core.identification.birdnet_identifier import BirdNETIdentifier
+from chirpedex.core.identification.remote_identifier import RemoteIdentifier
 
 
 class CommandFactory:

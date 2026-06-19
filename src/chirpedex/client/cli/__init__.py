@@ -2,9 +2,9 @@ import argparse
 import sys
 from argparse import ArgumentError
 
-from chirpedex.api import DEFAULT_API_PORT
-from chirpedex.cli.factories import CommandFactory, IdentifyCommandFactory
-from chirpedex.cli.exit_codes import ExitCode
+from chirpedex.client.api import DEFAULT_API_PORT
+from chirpedex.core.cli.factories import CommandFactory, IdentifyCommandFactory
+from chirpedex.core.cli.exit_codes import ExitCode
 
 
 def create_parser() -> argparse.ArgumentParser:

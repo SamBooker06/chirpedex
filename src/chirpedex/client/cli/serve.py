@@ -1,5 +1,5 @@
-from chirpedex.cli.exit_codes import ExitCode
-from chirpedex.cli.command import CommandResult, Command
+from chirpedex.core.cli.exit_codes import ExitCode
+from chirpedex.core.cli.command import CommandResult, Command
 
 
 class ServeCommand(Command):
@@ -11,7 +11,7 @@ class ServeCommand(Command):
 
     def execute(self) -> CommandResult:
         try:
-            from chirpedex.api.server import start_server
+            from chirpedex.client.api.server import start_server
 
             start_server(self.host, self.port)
 

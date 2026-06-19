@@ -1,3 +1,7 @@
+"""
+The only role of the server is to identify the birds - it is not responsible for keeping track
+"""
+
 import asyncio
 import io
 import json
@@ -10,9 +14,9 @@ from fastapi import Depends, UploadFile, FastAPI
 from starlette.websockets import WebSocket
 
 import chirpedex
-from chirpedex.api import DEFAULT_HOST, DEFAULT_API_PORT
-from chirpedex.identification.birdnet_identifier import BirdNETIdentifier
-from chirpedex.identification.identifier import BirdIdentifier
+from chirpedex.client.api import DEFAULT_HOST, DEFAULT_API_PORT
+from chirpedex.core.identification.birdnet_identifier import BirdNETIdentifier
+from chirpedex.core.identification import BirdIdentifier
 
 SERVER_READY = "[SERVER READY]"
 SERVER_SHUTDOWN = "[SERVER SHUTDOWN]"

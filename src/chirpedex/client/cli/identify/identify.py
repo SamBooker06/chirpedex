@@ -1,7 +1,7 @@
 from abc import ABC
 
-from chirpedex.cli.command import Command
-from chirpedex.identification.identifier import BirdIdentifier
+from chirpedex.core.cli.command import Command
+from chirpedex.core.identification.identifier import BirdIdentifier
 
 
 class IdentifyCommand(Command, ABC):

@@ -1,10 +1,10 @@
 from io import BytesIO
 
-from chirpedex.cli.command import CommandResult
-from chirpedex.cli.exit_codes import ExitCode
-from chirpedex.cli.identify.identify import IdentifyCommand
-from chirpedex.identification.identifier import BirdIdentifier
-from chirpedex.models import BirdPrediction
+from chirpedex.core.cli.command import CommandResult
+from chirpedex.core.cli.exit_codes import ExitCode
+from chirpedex.core.cli.identify.identify import IdentifyCommand
+from chirpedex.core.identification.identifier import BirdIdentifier
+from chirpedex.core.models import BirdPrediction
 
 
 class IdentifySingleCommand(IdentifyCommand):

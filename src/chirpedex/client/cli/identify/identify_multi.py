@@ -1,11 +1,11 @@
 from typing import List
 
-from chirpedex.cli.command import CommandResult
-from chirpedex.cli.identify.identify import IdentifyCommand
-from chirpedex.cli.identify.identify_single import IdentifySingleCommand
-from chirpedex.identification.identifier import BirdIdentifier
-from chirpedex.cli.exit_codes import ExitCode
-from chirpedex.models import BirdPrediction
+from chirpedex.core.cli.command import CommandResult
+from chirpedex.core.cli.identify.identify import IdentifyCommand
+from chirpedex.core.cli.identify.identify_single import IdentifySingleCommand
+from chirpedex.core.identification.identifier import BirdIdentifier
+from chirpedex.core.cli.exit_codes import ExitCode
+from chirpedex.core.models import BirdPrediction
 
 
 class IdentifyMultiCommand(IdentifyCommand):
