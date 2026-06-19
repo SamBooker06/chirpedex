@@ -1,210 +1,141 @@
 # Chirpedex
 
-A portable bird identification system ("Pokédex for birds") that can listen to birdsong, identify species, and save sightings to a personal collection.
+Chirpedex identifies birds from audio recordings using [BirdNET](https://birdnet.cornell.edu/). It provides a Python CLI for local inference, an optional HTTP API, and optional PostgreSQL-backed sighting registration.
 
-## Quick Start
+## Requirements
 
-### Local Installation
+- Python 3.12 or later
+- [uv](https://docs.astral.sh/uv/)
+- Docker and Docker Compose (for containerised use)
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/chirpedex.git
-   cd chirpedex
-   ```
+The first local BirdNET run downloads model data, so it needs network access and can take longer than later runs.
 
-2. Install dependencies with `uv`:
-   ```bash
-   uv sync
-   ```
+## Quick start
 
-3. Run the CLI:
-   ```bash
-   uv run python -m chirpedex identify path/to/audio.wav
-   ```
+Install the project dependencies:
 
-### Docker Usage
-
-Build the image:
 ```bash
-docker compose build
+uv sync
 ```
 
-Run identification:
+Identify an audio file without recording a sighting:
+
 ```bash
-docker compose run --rm chirpedex identify path/to/audio.wav
+SCHEMA_PATH=src/chirpedex/core/db/sql/01-schema.sql \
+  uv run chirpedex identify --no-register examples/audio/buzzard.mp3
 ```
 
-Run tests:
-```bash
-docker compose run --rm chirpedex pytest
-```
+`--no-register` is the simplest mode: it runs local BirdNET inference and does not require PostgreSQL. `SCHEMA_PATH` is currently required by the CLI for every `identify` invocation.
 
-Show help:
-```bash
-docker compose run --rm chirpedex --help
-```
+Example output:
 
-## Example Output
-
-```
+```text
 Species: European Robin
 Scientific name: Erithacus rubecula
 Confidence: 0.92
 ```
 
-## Project Structure
+## CLI
 
-```
-chirpedex/
-├── README.md
-├── Dockerfile
-├── docker-compose.yml
-├── pyproject.toml
-├── src/
-│   └── chirpedex/
-│       └── identification/
-│           ├── identifier.py            # Bird identification interface
-│           └── birdnet_identifier.py    # Identification using birdnet
-│       ├── __init__.py
-│       ├── __main__.py        # Entry point for python -m chirpedex
-│       ├── cli.py             # CLI interface
-│       ├── audio.py           # Audio file validation
-│       ├── models.py          # Data models
-│       └── errors.py          # Custom exceptions
-└── tests/
-    ├── test_cli.py
-    ├── test_audio.py
-    ├── test_models.py
-    ├── test_identifier.py
-    └── conftest.py
+The package exposes both `chirpedex` and `python -m chirpedex` entry points.
+
+```bash
+chirpedex identify [OPTIONS] AUDIO_PATH [AUDIO_PATH ...]
 ```
 
-## Architecture
+Useful options:
 
-### Audio Module (`audio.py`)
-- Handles audio file validation
-- Supports: WAV, MP3, FLAC, OGG, M4A
-- Validates file existence and format
+- `--no-register` — do not persist sightings; use this unless PostgreSQL is configured.
+- `--remote` — send each audio file to a running Chirpedex API instead of using local BirdNET inference.
+- `--host URL` and `--port PORT` — remote API address (defaults: `http://localhost` and `7092`).
 
-### Identifier Module (`identifier.py`)
-- Abstract `BirdIdentifier` interface
-- `BirdNETIdentifier` implementation using the BirdNET model
-- Keeps inference backend swappable for future alternatives
+Multiple audio files can be supplied in a single command. The CLI prints one prediction for each input file.
 
-### Models Module (`models.py`)
-- `BirdPrediction` dataclass
-- Contains: common name, scientific name, confidence, timestamp, source path
+Start the API server with:
 
-### CLI Module (`cli.py`)
-- Argument parsing with subcommands
-- `identify` command for bird audio analysis
-- Structured output with human-readable formatting
-- Future support for JSON output
+```bash
+uv run chirpedex serve --host 0.0.0.0 --port 7092
+```
+
+The API exposes `POST /identify`, which accepts an uploaded audio file, and `GET /version`.
+
+## PostgreSQL sighting registration
+
+Without `--no-register`, the CLI initialises and writes to PostgreSQL. Set these variables before running it:
+
+```bash
+export SCHEMA_PATH=src/chirpedex/core/db/sql/01-schema.sql
+export POSTGRES_USERNAME=postgres
+export POSTGRES_PASSWORD=your-password
+export POSTGRES_HOST=localhost
+export POSTGRES_PORT=5432
+export POSTGRES_DB=chirpedex
+```
+
+Start the bundled development database with:
+
+```bash
+docker compose up -d postgres
+```
+
+Do not commit the resulting `.env` file or database credentials.
+
+## Docker
+
+Build the runtime image:
+
+```bash
+docker compose --profile prod build chirpedex
+```
+
+The runtime image intentionally does not include example audio or database schema files. Mount the working tree when passing an audio file or schema path:
+
+```bash
+docker compose --profile prod run --rm \
+  -v "$PWD:/workspace:ro" \
+  -e SCHEMA_PATH=/workspace/src/chirpedex/core/db/sql/01-schema.sql \
+  chirpedex identify --no-register /workspace/examples/audio/buzzard.mp3
+```
+
+Run the test image:
+
+```bash
+docker compose --profile testing run --rm chirpedex-test
+```
 
 ## Testing
 
-Run all tests locally:
-```bash
-pytest
-```
+Run the unit tests locally:
 
-Run tests in Docker:
-```bash
-docker compose run --rm chirpedex pytest
-```
-
-Test coverage includes:
-- CLI argument parsing and command handling
-- Audio file validation (exists, format)
-- Prediction schema and output
-- Mocked inference results
-- Error handling
-
-## Machine Learning Model
-
-Uses [BirdNET](https://birdnet.cornell.edu/) for bird sound classification:
-- Trained on Cornell Lab of Ornithology data
-- Supports 6,000+ global bird species
-- Model weights downloaded automatically on first run (~1 GB)
-- Cached locally for subsequent runs
-
-## Future Roadmap
-
-1. **Phase 2**: SQLite sighting storage
-2. **Phase 3**: FastAPI backend and web dashboard
-3. **Phase 4**: Raspberry Pi integration
-4. **Phase 5**: GPS-tagged sightings
-5. **Phase 6**: Offline edge inference
-6. **Phase 7**: PostgreSQL backend
-7. **Phase 8**: Portable device design
-8. **Phase 9**: E-ink display interface
-
-## Development
-
-### Install development environment:
-```bash
-uv sync
-```
-
-### Run the application:
-```bash
-uv run python -m chirpedex identify path/to/audio.wav
-```
-
-### Run tests locally:
 ```bash
 uv run pytest
 ```
 
-### Code style:
-- Python 3.12+
-- Type hints throughout
-- Pytest for tests
-- Clear error messages
-- Pathlib for file paths
+The test suite uses mocked inference and does not download or run the BirdNET model.
 
-### Running tests with coverage:
-```bash
-uv run pytest --cov=src/chirpedex tests/
+## Project layout
+
+```text
+src/chirpedex/
+├── client/
+│   ├── api/                 # FastAPI application
+│   ├── cli/                 # Command parsing and CLI commands
+│   └── identify_and_record_service.py
+└── core/
+    ├── audio.py             # Audio validation helpers
+    ├── db/                  # Repository and PostgreSQL schema
+    ├── identification/      # Local and remote identifier backends
+    └── models.py            # Prediction and sighting models
+tests/
+examples/audio/
 ```
 
-## Docker Configuration
+## Current limitations
 
-### Dockerfile
-- Based on `python:3.12-slim-bookworm`
-- System dependencies: libsndfile1 (for audio processing)
-- Non-root user for security
-- Includes model cache volume for persistence
-- Multi-stage build approach (future optimization)
-
-### Docker Compose
-- Single service: `chirpedex`
-- Volume mounts for development and caching
-- Supports local audio files via volume binding
-
-### Supported commands:
-```bash
-# Identify a bird
-docker compose run --rm chirpedex identify path/to/audio.wav
-
-# Run tests
-docker compose run --rm chirpedex pytest
-
-# Show help
-docker compose run --rm chirpedex --help
-```
-
-## Contributing
-
-See `AGENTS.md` for implementation guidelines and design principles.
+- Streaming identification is not implemented.
+- The CLI accepts `--json`, but JSON output is not rendered yet.
+- BirdNET model data is fetched at runtime; model weights are not committed to the repository.
 
 ## License
 
-See LICENSE file.
-
-## References
-
-- [BirdNET](https://birdnet.cornell.edu/)
-- [Cornell Lab of Ornithology](https://www.birds.cornell.edu/)
-- [birdnetlib Python package](https://pypi.org/project/birdnetlib/)
-
+See [LICENSE](LICENSE).
