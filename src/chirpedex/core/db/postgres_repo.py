@@ -1,5 +1,5 @@
 import os
-from typing import LiteralString, List
+from typing import List, LiteralString, cast
 
 from psycopg.sql import SQL
 from psycopg_pool import ConnectionPool
@@ -22,10 +22,11 @@ class PostgresChirpedexRepo(ChirpedexRepository):
 
         self.connection_pool = ConnectionPool(connection_string)
 
-    def init_db(self, schema: SQL | LiteralString):
+    def init_db(self, schema: str) -> None:
         with self.connection_pool.connection() as conn:
             with conn.cursor() as cursor:
-                cursor.execute(schema)
+                # Schema files are trusted project assets, not user-provided SQL.
+                cursor.execute(SQL(cast(LiteralString, schema)))
 
     def get_sightings_by_scientific_name(self, scientific_name: str) -> List[BirdSighting]:
         with self.connection_pool.connection() as conn:
@@ -48,17 +49,23 @@ class PostgresChirpedexRepo(ChirpedexRepository):
     def add_sighting(self, bird_sighting: BirdSightingCreate) -> None:
         with self.connection_pool.connection() as conn:
             with conn.cursor() as cursor:
-                scientific_name = bird_sighting.scientific_name
-                common_name = bird_sighting.common_name
-                location = bird_sighting.location
-                timestamp = bird_sighting.timestamp
-
-                # Will also add a bird if it doesn't exist
-                cursor.execute("""
-                               WITH upserted_bird AS (
-                                   INSERT INTO bird (scientific_name, common_name)
-                                       VALUES (%s, %s) ON CONFLICT (scientific_name) DO UPDATE SET common_name=EXCLUDED.common_name RETURNING bird.id)
-                               INSERT
-                               INTO bird_sighting (bird_id, location, timestamp)
-                               VALUES ((SELECT id FROM upserted_bird), %s, %s)
-                               """, (scientific_name, common_name, location, timestamp))
+                cursor.execute(
+                    """
+                    WITH upserted_bird AS (
+                        INSERT INTO bird (scientific_name, common_name)
+                        VALUES (%s, %s)
+                        ON CONFLICT (scientific_name)
+                        DO UPDATE SET common_name = EXCLUDED.common_name
+                        RETURNING id
+                    )
+                    INSERT INTO bird_sighting (bird_id, location, timestamp)
+                    SELECT id, %s, %s
+                    FROM upserted_bird
+                    """,
+                    (
+                        bird_sighting.scientific_name,
+                        bird_sighting.common_name,
+                        bird_sighting.location,
+                        bird_sighting.timestamp,
+                    ),
+                )
