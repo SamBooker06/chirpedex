@@ -103,8 +103,8 @@ def main() -> int:
         parser.print_help()
         return ExitCode.INVALID_ARGUMENT_ERROR_EXIT_CODE
 
-    except Exception as e:
-        raise e
+    except Exception as error:
+        print(error)
         return ExitCode.CHIRPEDEX_ERROR_EXIT_CODE
 
 
