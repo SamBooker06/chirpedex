@@ -39,7 +39,9 @@ def run_cli_with_command(
         return command
 
     with patch.object(sys, "argv", ["chirpedex", *argv]):
-        with patch("chirpedex.cli.CommandFactory.create_command", create_command):
+        with patch(
+            "chirpedex.client.cli.CommandFactory.create_command", create_command
+        ):
             exit_code = main()
 
     assert created_with is not None
@@ -142,8 +144,16 @@ def test_main_identify_prints_multiple_predictions(
     command = FakeCommand(
         ExitCode.SUCCESS_EXIT_CODE,
         [
-            BirdPrediction("European Robin", "Erithacus rubecula", 0.95),
-            BirdPrediction("Common Blackbird", "Turdus merula", 0.85),
+            BirdPrediction(
+                species_common_name="European Robin",
+                species_scientific_name="Erithacus rubecula",
+                confidence=0.95,
+            ),
+            BirdPrediction(
+                species_common_name="Common Blackbird",
+                species_scientific_name="Turdus merula",
+                confidence=0.85,
+            ),
         ],
     )
 
@@ -224,7 +234,7 @@ def test_main_returns_generic_error_when_command_creation_fails(
 ) -> None:
     with patch.object(sys, "argv", ["chirpedex", "identify", "robin.wav"]):
         with patch(
-            "chirpedex.cli.CommandFactory.create_command",
+            "chirpedex.client.cli.CommandFactory.create_command",
             MagicMock(side_effect=RuntimeError("factory failed")),
         ):
             exit_code = main()

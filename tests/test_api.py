@@ -17,6 +17,7 @@ from chirpedex.client.api.server import (
     start_server,
 )
 from chirpedex.client.cli import ExitCode
+from chirpedex.core.models import BirdPrediction
 
 client = TestClient(app)
 
@@ -36,7 +37,7 @@ def test_shutdown_mock(mock_raise_signal):
 
 def test_shutdown():
     proc = subprocess.Popen(
-        [sys.executable, "-u", "-m", "chirpedex", "serve"],
+        [sys.executable, "-u", "-m", "chirpedex", "serve", "--port", "0"],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -76,7 +77,7 @@ def test_shutdown():
 
 @patch("uvicorn.run")
 def test_mock_startup(mock_uvicorn):
-    with patch("chirpedex.api.server.BirdNETIdentifier"):
+    with patch("chirpedex.client.api.server.BirdNETIdentifier"):
         start_server()
 
         mock_uvicorn.assert_called_once()
@@ -85,9 +86,15 @@ def test_mock_startup(mock_uvicorn):
 def test_mock_file_upload():
     mock_identifier = MagicMock()
     uploaded_contents: list[bytes] = []
-    mock_identifier.identify_from_file.side_effect = (
-        lambda audio_file: uploaded_contents.append(audio_file.read())
-    )
+    def identify_from_file(audio_file: io.BytesIO) -> BirdPrediction:
+        uploaded_contents.append(audio_file.read())
+        return BirdPrediction(
+            species_common_name="European Robin",
+            species_scientific_name="Erithacus rubecula",
+            confidence=0.95,
+        )
+
+    mock_identifier.identify_from_file.side_effect = identify_from_file
     app.dependency_overrides[get_identifier] = lambda: mock_identifier
 
     try:
