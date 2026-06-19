@@ -7,11 +7,11 @@ from typing import Optional
 
 import httpx
 
-from chirpedex.api import DEFAULT_API_PORT
-from chirpedex.errors import IdentificationError
-from chirpedex.identification.identifier import BirdIdentifier
-from chirpedex.location import Location
-from chirpedex.models import BirdPrediction
+from chirpedex.client.api import DEFAULT_API_PORT
+from chirpedex.core.errors import IdentificationError
+from chirpedex.core.identification import BirdIdentifier
+from chirpedex.core.location import Location
+from chirpedex.core.models import BirdPrediction
 
 
 class RemoteIdentifier(BirdIdentifier):
@@ -24,7 +24,7 @@ class RemoteIdentifier(BirdIdentifier):
 
     def identify_from_file(self, audio_file: io.BytesIO, location: Location | None = None) -> BirdPrediction:
         with httpx.Client() as session:
-            response = session.post(f"{self.host}:{self.port}/identify", files={"audio_file": audio_file})
+            response = session.post(f"{self.host}:{self.port}/identify", files={"audio_file": audio_file}, timeout=10.0)
             decoded_data = response.read().decode("utf-8")
 
             try:

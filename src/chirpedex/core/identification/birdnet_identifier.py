@@ -5,9 +5,9 @@ import sys
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from typing import Any, IO, Iterator, Optional
 
-from chirpedex.identification.identifier import BirdIdentifier
-from chirpedex.location import Location
-from chirpedex.models import BirdPrediction
+from chirpedex.core.identification import BirdIdentifier
+from chirpedex.core.location import Location
+from chirpedex.core.models import BirdPrediction
 
 
 SAMPLE_RATE = 48e3
@@ -56,7 +56,7 @@ class BirdNETIdentifier(BirdIdentifier):
                 self._buffer_recording_class = RecordingBuffer
 
         except ImportError as exc:
-            from chirpedex.errors import ModelError
+            from chirpedex.core.errors import ModelError
 
             message = str(exc)
             if "birdnetlib" in message:
@@ -86,7 +86,7 @@ class BirdNETIdentifier(BirdIdentifier):
         Raises:
             IdentificationError: If identification fails.
         """
-        from chirpedex.errors import IdentificationError
+        from chirpedex.core.errors import IdentificationError
 
         try:
             with self._suppress_library_output():

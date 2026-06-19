@@ -1,6 +1,6 @@
 """Data models for bird predictions and sightings."""
 
-from dataclasses import dataclass, field
+from dataclasses import field
 from datetime import datetime
 from pathlib import Path
 
@@ -11,7 +11,7 @@ class BirdPrediction(BaseModel):
     """A prediction of a bird species from audio analysis."""
 
     species_common_name: str
-    species_scientific_name: str | None = None
+    species_scientific_name: str
     confidence: float = 0.0
     timestamp: datetime = field(default_factory=datetime.now)
     source_audio_path: Path | None = None
