@@ -49,6 +49,7 @@ def test_bird_prediction_custom_timestamp() -> None:
     custom_time = datetime(2024, 1, 1, 12, 0, 0)
     pred = BirdPrediction(
         species_common_name="Sparrow",
+        species_scientific_name="Passer domesticus",
         confidence=0.75,
         timestamp=custom_time,
     )
@@ -56,7 +57,7 @@ def test_bird_prediction_custom_timestamp() -> None:
     assert pred.timestamp == custom_time
 
 
-def test_bird_prediction_str_with_scientific_name() -> None:
+def test_bird_prediction() -> None:
     """Test string representation with scientific name."""
     pred = BirdPrediction(
         species_common_name="European Robin",
@@ -70,15 +71,4 @@ def test_bird_prediction_str_with_scientific_name() -> None:
     assert "Confidence: 0.92" in output
 
 
-def test_bird_prediction_str_without_scientific_name() -> None:
-    """Test string representation without scientific name."""
-    pred = BirdPrediction(
-        species_common_name="Unknown Bird",
-        confidence=0.50,
-    )
-
-    output = str(pred)
-    assert "Species: Unknown Bird" in output
-    assert "Scientific name:" not in output
-    assert "Confidence: 0.50" in output
 
