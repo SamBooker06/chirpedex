@@ -3,7 +3,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from chirpedex.models import BirdPrediction
+from chirpedex.core.models import BirdPrediction
 
 
 def test_bird_prediction_basic() -> None:
@@ -21,7 +21,7 @@ def test_bird_prediction_basic() -> None:
 
 def test_bird_prediction_with_path() -> None:
     """Test BirdPrediction with audio path."""
-    test_path = Path("test.wav")
+    test_path = Path("robin.wav")
     pred = BirdPrediction(
         species_common_name="Great Tit",
         species_scientific_name="Parus major",

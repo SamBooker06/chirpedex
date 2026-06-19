@@ -7,9 +7,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from chirpedex.cli import create_parser, main
-from chirpedex.cli.exit_codes import ExitCode
-from chirpedex.models import BirdPrediction
+from chirpedex.client.cli import create_parser, main
+from chirpedex.client.cli import ExitCode
+from chirpedex.core.models import BirdPrediction
 
 
 class FakeCommand:
@@ -47,10 +47,10 @@ def run_cli_with_command(
 
 
 def test_parser_accepts_identify_audio_path() -> None:
-    args = parse_args(["identify", "test.wav"])
+    args = parse_args(["identify", "robin.wav"])
 
     assert args.command == "identify"
-    assert args.audio_path == ["test.wav"]
+    assert args.audio_path == ["robin.wav"]
     assert args.json is False
     assert args.remote is False
 
@@ -63,10 +63,10 @@ def test_parser_accepts_multiple_identify_audio_paths() -> None:
 
 
 def test_parser_accepts_identify_json_output() -> None:
-    args = parse_args(["identify", "test.wav", "--json"])
+    args = parse_args(["identify", "robin.wav", "--json"])
 
     assert args.command == "identify"
-    assert args.audio_path == ["test.wav"]
+    assert args.audio_path == ["robin.wav"]
     assert args.json is True
 
 
@@ -74,7 +74,7 @@ def test_parser_accepts_identify_remote_options() -> None:
     args = parse_args(
         [
             "identify",
-            "test.wav",
+            "robin.wav",
             "--remote",
             "--host",
             "http://chirpedex.local",
@@ -84,7 +84,7 @@ def test_parser_accepts_identify_remote_options() -> None:
     )
 
     assert args.command == "identify"
-    assert args.audio_path == ["test.wav"]
+    assert args.audio_path == ["robin.wav"]
     assert args.remote is True
     assert args.host == "http://chirpedex.local"
     assert args.port == 8080
@@ -125,12 +125,12 @@ def test_main_identify_prints_prediction(
         ),
     )
 
-    exit_code, args = run_cli_with_command(["identify", "test.wav"], command)
+    exit_code, args = run_cli_with_command(["identify", "robin.wav"], command)
 
     captured = capsys.readouterr()
     assert exit_code == ExitCode.SUCCESS_EXIT_CODE
     assert args.command == "identify"
-    assert args.audio_path == ["test.wav"]
+    assert args.audio_path == ["robin.wav"]
     assert "Species: European Robin" in captured.out
     assert "Scientific name: Erithacus rubecula" in captured.out
     assert "Confidence: 0.95" in captured.out
@@ -168,7 +168,7 @@ def test_main_identify_forwards_remote_options(
     exit_code, args = run_cli_with_command(
         [
             "identify",
-            "test.wav",
+            "robin.wav",
             "--remote",
             "--host",
             "http://chirpedex.local",
@@ -222,7 +222,7 @@ def test_main_serve_uses_parsed_host_and_port(
 def test_main_returns_generic_error_when_command_creation_fails(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with patch.object(sys, "argv", ["chirpedex", "identify", "test.wav"]):
+    with patch.object(sys, "argv", ["chirpedex", "identify", "robin.wav"]):
         with patch(
             "chirpedex.cli.CommandFactory.create_command",
             MagicMock(side_effect=RuntimeError("factory failed")),

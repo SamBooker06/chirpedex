@@ -9,14 +9,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from chirpedex.api.server import (
+from chirpedex.client.api.server import (
     SERVER_READY,
     SERVER_SHUTDOWN,
     app,
     get_identifier,
     start_server,
 )
-from chirpedex.cli.exit_codes import ExitCode
+from chirpedex.client.cli import ExitCode
 
 client = TestClient(app)
 
@@ -92,7 +92,7 @@ def test_mock_file_upload():
 
     try:
         with io.BytesIO(b"test file content") as fs:
-            response = client.post("/identify", files={"audio_file": ("test.wav", fs)})
+            response = client.post("/identify", files={"audio_file": ("robin.wav", fs)})
     finally:
         app.dependency_overrides.clear()
 

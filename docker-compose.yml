@@ -2,13 +2,21 @@ services:
   chirpedex:
     build:
       context: .
-      dockerfile: images/identity.Dockerfile
+      dockerfile: Dockerfile
     profiles:
       - prod
   chirpedex-test:
     build:
       context: .
-      dockerfile: images/identity.Dockerfile
+      dockerfile: Dockerfile
       target: test
     profiles:
       - testing
+  postgres:
+    image: postgres:12.2-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - 5432:5432

@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from chirpedex.errors import IdentificationError, ModelError
-from chirpedex.models import BirdPrediction
+from chirpedex.core.errors import IdentificationError, ModelError
+from chirpedex.core.models import BirdPrediction
 
 
 def create_identifier():
@@ -28,7 +28,7 @@ def create_identifier():
                 "birdnetlib.analyzer": analyzer_module,
             },
     ):
-        from chirpedex.identification.birdnet_identifier import BirdNETIdentifier
+        from chirpedex.core.identification.birdnet_identifier import BirdNETIdentifier
 
         return BirdNETIdentifier()
 
@@ -47,7 +47,7 @@ class TestBirdNETIdentifier:
 
         with patch("builtins.__import__", side_effect=import_without_birdnetlib):
             with pytest.raises(ModelError):
-                from chirpedex.identification.birdnet_identifier import BirdNETIdentifier
+                from chirpedex.core.identification.birdnet_identifier import BirdNETIdentifier
 
                 BirdNETIdentifier()
 
@@ -112,7 +112,7 @@ class TestBirdNETIdentifier:
                 "birdnetlib.analyzer": analyzer_module,
             },
         ):
-            from chirpedex.identification.birdnet_identifier import BirdNETIdentifier
+            from chirpedex.core.identification.birdnet_identifier import BirdNETIdentifier
 
             identifier = BirdNETIdentifier()
 

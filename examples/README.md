@@ -26,10 +26,10 @@ Once you've added an example audio file like `robin.wav`:
 
 ```bash
 # Local
-python -m chirpedex identify examples/test.wav
+python -m chirpedex identify examples/robin.wav
 
 # Docker
-docker compose run --rm chirpedex identify examples/test.wav
+docker compose run --rm chirpedex identify examples/robin.wav
 ```
 
 ## Recommended test species:

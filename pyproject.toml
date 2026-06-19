@@ -13,6 +13,7 @@ dependencies = [
     "httpx>=0.28.1",
     "librosa>=0.10.0",
     "numpy>=1.24.0",
+    "psycopg[binary,pool]>=3.3.4",
     "pydantic>=2.13.4",
     "pytest>=9.0.3",
     "python-multipart>=0.0.32",
@@ -30,10 +31,10 @@ dev = [
 ]
 
 [project.scripts]
-chirpedex = "chirpedex.cli.cli:main"
+chirpedex = "chirpedex.client.cli.__init__:main"
 
 [tool.fastapi]
-entrypoint = "chirpedex.api.server:_app"
+entrypoint = "chirpedex.client.api.server:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/chirpedex"]
@@ -43,9 +44,3 @@ source = "uv-dynamic-versioning"
 
 [tool.uv-dynamic-versioning]
 fallback-version = "0.0.0"
-
-[dependency-groups]
-dev = [
-    "fastapi[standard]>=0.137.0",
-    "pytest>=9.0.3",
-]

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/src/chirpedex/core/db/postgres_repo.py" value="cecf9384-43bc-473b-86c9-4429ea799346" />
+    <file url="file://$PROJECT_DIR$/src/chirpedex/core/db/sql/01-schema.sql" value="cecf9384-43bc-473b-86c9-4429ea799346" />
+  </component>
+</project>
