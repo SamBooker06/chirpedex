@@ -1,22 +1,23 @@
 from typing import List
 
-from chirpedex.core.cli.command import CommandResult
-from chirpedex.core.cli.identify.identify import IdentifyCommand
-from chirpedex.core.cli.identify.identify_single import IdentifySingleCommand
-from chirpedex.core.identification.identifier import BirdIdentifier
-from chirpedex.core.cli.exit_codes import ExitCode
+from chirpedex.client.cli.command import CommandResult
+from chirpedex.client.cli.identify.identify import IdentifyCommand
+from chirpedex.client.cli.identify.identify_single import IdentifySingleCommand
+from chirpedex.client.identify_and_record_service import IdentifyAndRecordService
+from chirpedex.core.identification import BirdIdentifier
+from chirpedex.client.cli.exit_codes import ExitCode
 from chirpedex.core.models import BirdPrediction
 
 
 class IdentifyMultiCommand(IdentifyCommand):
     """Identify multiple files."""
 
-    def __init__(self, identifier: BirdIdentifier, paths: List[str]) -> None:
-        super().__init__(identifier)
+    def __init__(self, identification_service: IdentifyAndRecordService, paths: List[str]) -> None:
+        super().__init__(identification_service)
 
         assert isinstance(paths, list)
         assert all(isinstance(path, str) for path in paths)
-        self._identification_command = IdentifySingleCommand(identifier, paths[0])
+        self._identification_command = IdentifySingleCommand(identification_service, paths[0])
         self.paths = paths
 
     def execute(self) -> CommandResult[List[BirdPrediction] | str]:

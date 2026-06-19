@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Optional
 
-from chirpedex.core.cli.exit_codes import ExitCode
+from chirpedex.client.cli.exit_codes import ExitCode
 
 T = TypeVar("T")
 

@@ -3,8 +3,8 @@ import sys
 from argparse import ArgumentError
 
 from chirpedex.client.api import DEFAULT_API_PORT
-from chirpedex.core.cli.factories import CommandFactory, IdentifyCommandFactory
-from chirpedex.core.cli.exit_codes import ExitCode
+from chirpedex.client.cli.factories import CommandFactory, IdentifyCommandFactory
+from chirpedex.client.cli.exit_codes import ExitCode
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -43,6 +43,11 @@ def create_parser() -> argparse.ArgumentParser:
         default="http://localhost",
     )
     identify_parser.add_argument(
+        "--no-register",
+        help="Don't register any identified birds into the database.",
+        action="store_true",
+    )
+    identify_parser.add_argument(
         "--port",
         help="Port of the remote API.",
         default=DEFAULT_API_PORT,
@@ -63,6 +68,11 @@ def create_parser() -> argparse.ArgumentParser:
         help="Host to serve the chirpedex application.",
         default="0.0.0.0",
         type=str
+    )
+    serve_parser.add_argument(
+        "--register",
+        help="Register a bird species into the database.",
+        action="store_true",
     )
 
     return parser
@@ -94,7 +104,7 @@ def main() -> int:
         return ExitCode.INVALID_ARGUMENT_ERROR_EXIT_CODE
 
     except Exception as e:
-        print(e)
+        raise e
         return ExitCode.CHIRPEDEX_ERROR_EXIT_CODE
 
 

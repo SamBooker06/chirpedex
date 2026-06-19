@@ -1,15 +1,16 @@
 from io import BytesIO
 
-from chirpedex.core.cli.command import CommandResult
-from chirpedex.core.cli.exit_codes import ExitCode
-from chirpedex.core.cli.identify.identify import IdentifyCommand
-from chirpedex.core.identification.identifier import BirdIdentifier
+from chirpedex.client.cli.command import CommandResult
+from chirpedex.client.cli.exit_codes import ExitCode
+from chirpedex.client.cli.identify.identify import IdentifyCommand
+from chirpedex.client.identify_and_record_service import IdentifyAndRecordService
+from chirpedex.core.identification import BirdIdentifier
 from chirpedex.core.models import BirdPrediction
 
 
 class IdentifySingleCommand(IdentifyCommand):
-    def __init__(self, identifier: BirdIdentifier, file_path: str):
-        super().__init__(identifier)
+    def __init__(self, identification_service: IdentifyAndRecordService, file_path: str):
+        super().__init__(identification_service)
 
         assert isinstance(file_path, str)
         self.file_path = file_path
@@ -32,9 +33,11 @@ class IdentifySingleCommand(IdentifyCommand):
                     return command_result
 
         except FileNotFoundError as e:
+            raise e
             command_result = CommandResult(ExitCode.FILE_NOT_FOUND_ERROR_EXIT_CODE, str(e), is_error=True)
 
         except Exception as e:
+            raise e
             command_result = CommandResult(ExitCode.CHIRPEDEX_ERROR_EXIT_CODE, str(e), is_error=True)
 
         finally:

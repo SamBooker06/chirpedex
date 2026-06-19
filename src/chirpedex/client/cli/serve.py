@@ -1,5 +1,5 @@
-from chirpedex.core.cli.exit_codes import ExitCode
-from chirpedex.core.cli.command import CommandResult, Command
+from chirpedex.client.cli.exit_codes import ExitCode
+from chirpedex.client.cli.command import CommandResult, Command
 
 
 class ServeCommand(Command):
